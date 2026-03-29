@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+poetry.lock
+*.db
+*.sqlite3
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+.mutmut-cache
+.vscode/
+.idea/
+.DS_Store
+.streamlit/
