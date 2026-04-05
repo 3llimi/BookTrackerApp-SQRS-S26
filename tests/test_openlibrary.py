@@ -1,9 +1,22 @@
 from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
+from uuid import uuid4
 from src.main import app
 import httpx
 
 client = TestClient(app)
+
+
+def get_auth_headers(email=None, password="password123"):
+    if email is None:
+        email = f"openlibrary-{uuid4().hex[:8]}@test.com"
+
+    client.post("/api/v1/auth/register", json={"email": email, "password": password})
+    response = client.post(
+        "/api/v1/auth/login", json={"email": email, "password": password}
+    )
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
 
 
 # mock response helper
@@ -18,6 +31,7 @@ def mock_response(json_data: dict, status_code: int = 200):
 
 # search tests
 def test_search_returns_simplified_list():
+    headers = get_auth_headers()
     fake_response = {
         "docs": [
             {
@@ -25,13 +39,13 @@ def test_search_returns_simplified_list():
                 "author_name": ["Frank Herbert"],
                 "isbn": ["9780441013593"],
                 "cover_i": 12345,
-                "first_publish_year": 1965
+                "first_publish_year": 1965,
             }
         ]
     }
 
     with patch("httpx.get", return_value=mock_response(fake_response)):
-        response = client.get("/api/v1/openlibrary/search?q=dune")
+        response = client.get("/api/v1/openlibrary/search?q=dune", headers=headers)
 
     assert response.status_code == 200
     data = response.json()
@@ -43,13 +57,12 @@ def test_search_returns_simplified_list():
 
 
 def test_search_handles_missing_fields():
+    headers = get_auth_headers()
     # some Open Library docs have missing fields — should not crash
-    fake_response = {
-        "docs": [{"title": "Some Book"}]  # no author, isbn, cover_i
-    }
+    fake_response = {"docs": [{"title": "Some Book"}]}  # no author, isbn, cover_i
 
     with patch("httpx.get", return_value=mock_response(fake_response)):
-        response = client.get("/api/v1/openlibrary/search?q=something")
+        response = client.get("/api/v1/openlibrary/search?q=something", headers=headers)
 
     assert response.status_code == 200
     data = response.json()
@@ -60,15 +73,16 @@ def test_search_handles_missing_fields():
 
 # ISBN lookup tests
 def test_get_book_by_isbn():
+    headers = get_auth_headers()
     fake_response = {
         "title": "Dune",
         "number_of_pages": 412,
         "covers": [12345],
-        "authors": [{"key": "/authors/OL123A"}]
+        "authors": [{"key": "/authors/OL123A"}],
     }
 
     with patch("httpx.get", return_value=mock_response(fake_response)):
-        response = client.get("/api/v1/openlibrary/book/9780441013593")
+        response = client.get("/api/v1/openlibrary/book/9780441013593", headers=headers)
 
     assert response.status_code == 200
     data = response.json()
@@ -80,22 +94,25 @@ def test_get_book_by_isbn():
 
 # error handling tests
 def test_timeout_returns_503():
+    headers = get_auth_headers()
     with patch("httpx.get", side_effect=httpx.TimeoutException("timeout")):
-        response = client.get("/api/v1/openlibrary/search?q=dune")
+        response = client.get("/api/v1/openlibrary/search?q=dune", headers=headers)
     assert response.status_code == 503
 
 
 def test_connection_error_returns_503():
+    headers = get_auth_headers()
     with patch("httpx.get", side_effect=httpx.ConnectError("connection failed")):
-        response = client.get("/api/v1/openlibrary/search?q=dune")
+        response = client.get("/api/v1/openlibrary/search?q=dune", headers=headers)
     assert response.status_code == 503
 
 
 def test_malformed_json_returns_502():
+    headers = get_auth_headers()
     mock = MagicMock()
     mock.raise_for_status = MagicMock()
     mock.json.side_effect = ValueError("malformed json")
 
     with patch("httpx.get", return_value=mock):
-        response = client.get("/api/v1/openlibrary/search?q=dune")
+        response = client.get("/api/v1/openlibrary/search?q=dune", headers=headers)
     assert response.status_code == 502

@@ -1,11 +1,12 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, asc, desc
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 from src.models import Book, Progress
 from typing import Optional
 
 # valid sort fields, anything else returns 422
 VALID_SORT_FIELDS = {"title", "author", "created_at", "rating"}
+
 
 def search_books(
     db: Session,
@@ -23,7 +24,10 @@ def search_books(
     if sort not in VALID_SORT_FIELDS:
         raise HTTPException(
             status_code=422,
-            detail=f"Invalid sort field '{sort}'. Must be one of: {', '.join(VALID_SORT_FIELDS)}"
+            detail=(
+                f"Invalid sort field '{sort}'. Must be one of: "
+                f"{', '.join(VALID_SORT_FIELDS)}"
+            ),
         )
         # start with base query — always filter by current user
     query = db.query(Book).filter(Book.user_id == user_id)
@@ -33,8 +37,8 @@ def search_books(
         search_term = f"%{q.lower()}%"
         query = query.filter(
             or_(
-                Book.title.ilike(search_term),    # ilike = case-insensitive LIKE
-                Book.author.ilike(search_term)
+                Book.title.ilike(search_term),  # ilike = case-insensitive LIKE
+                Book.author.ilike(search_term),
             )
         )
 

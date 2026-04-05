@@ -3,18 +3,21 @@ from fastapi import HTTPException, status
 from src.models import Progress, Book
 from src.schemas import ProgressCreate, ProgressUpdate
 
+
 # helper: get book or 404
 def _get_book(db: Session, book_id: int, user_id: int) -> Book:
-    book = db.query(Book).filter(
-        Book.id == book_id,
-        Book.user_id == user_id
-    ).first()
+    book = db.query(Book).filter(Book.id == book_id, Book.user_id == user_id).first()
     if not book:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Book not found"
+        )
     return book
 
+
 # CREATE
-def create_progress(db: Session, book_id: int, data: ProgressCreate, user_id: int) -> Progress:
+def create_progress(
+    db: Session, book_id: int, data: ProgressCreate, user_id: int
+) -> Progress:
     # Ensure the book exists and belongs to the user
     book = _get_book(db, book_id, user_id)
 
@@ -22,15 +25,18 @@ def create_progress(db: Session, book_id: int, data: ProgressCreate, user_id: in
     if book.progress:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Progress already exists for this book"
+            detail="Progress already exists for this book",
         )
-    
+
     # validate pages_read <= total_pages
     if data.pages_read and book.total_pages:
         if data.pages_read > book.total_pages:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=f"pages_read ({data.pages_read}) cannot exceed total_pages ({book.total_pages})"
+                detail=(
+                    f"pages_read ({data.pages_read}) cannot exceed "
+                    f"total_pages ({book.total_pages})"
+                ),
             )
 
     # validate rating 1-5
@@ -38,7 +44,7 @@ def create_progress(db: Session, book_id: int, data: ProgressCreate, user_id: in
         if not (1 <= data.rating <= 5):
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail="Rating must be between 1 and 5"
+                detail="Rating must be between 1 and 5",
             )
 
     progress = Progress(**data.model_dump(), book_id=book_id)
@@ -47,6 +53,7 @@ def create_progress(db: Session, book_id: int, data: ProgressCreate, user_id: in
     db.refresh(progress)
     return progress
 
+
 # GET
 def get_progress(db: Session, book_id: int, user_id: int) -> Progress:
     book = _get_book(db, book_id, user_id)
@@ -54,16 +61,14 @@ def get_progress(db: Session, book_id: int, user_id: int) -> Progress:
     if not book.progress:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="No progress record found for this book"
+            detail="No progress record found for this book",
         )
     return book.progress
 
+
 # PATCH
 def update_progress(
-    db: Session,
-    book_id: int,
-    data: ProgressUpdate,
-    user_id: int
+    db: Session, book_id: int, data: ProgressUpdate, user_id: int
 ) -> Progress:
     book = _get_book(db, book_id, user_id)
     progress = book.progress
@@ -71,7 +76,7 @@ def update_progress(
     if not progress:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="No progress record found for this book"
+            detail="No progress record found for this book",
         )
 
     # get only the fields the user actually sent
@@ -81,14 +86,17 @@ def update_progress(
     if book.total_pages and new_pages > book.total_pages:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=f"pages_read ({new_pages}) cannot exceed total_pages ({book.total_pages})"
+            detail=(
+                f"pages_read ({new_pages}) cannot exceed "
+                f"total_pages ({book.total_pages})"
+            ),
         )
 
     new_rating = updates.get("rating")
     if new_rating is not None and not (1 <= new_rating <= 5):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Rating must be between 1 and 5"
+            detail="Rating must be between 1 and 5",
         )
 
     # apply updates
