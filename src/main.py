@@ -27,6 +27,6 @@ app.add_middleware(
 )
 
 app.include_router(books.router,       prefix="/api/v1")
-""" app.include_router(progress.router,    prefix="/api/v1")
-app.include_router(auth.router,        prefix="/api/v1")
+app.include_router(progress.router,    prefix="/api/v1")
+"""app.include_router(auth.router,        prefix="/api/v1")
 app.include_router(openlibrary.router, prefix="/api/v1") """
