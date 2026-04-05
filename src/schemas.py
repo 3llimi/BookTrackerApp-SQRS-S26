@@ -4,8 +4,8 @@ from datetime import datetime
 
 
 class ProgressCreate(BaseModel):
-    status: str = "not_started"        
-    current_page: Optional[int] = 0    
+    status: str = "not_started"
+    current_page: Optional[int] = 0
     rating: Optional[int] = None
     notes: Optional[str] = None
 
@@ -20,11 +20,11 @@ class ProgressUpdate(BaseModel):
 class ProgressOut(BaseModel):
     id: int
     status: str
-    current_page: int                  
+    current_page: int
     rating: Optional[int]
     notes: Optional[str]
     updated_at: datetime
-    progress_percentage: Optional[float] = None  
+    progress_percentage: Optional[float] = None
 
     model_config = ConfigDict(from_attributes=True)
 

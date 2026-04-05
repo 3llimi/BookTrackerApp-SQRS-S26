@@ -24,7 +24,7 @@ def create_book(
 # GET /api/v1/books
 @router.get("/", response_model=List[BookOut])
 def list_books(
-    title: Optional[str] = None,       # was only limit/offset before
+    title: Optional[str] = None,  # was only limit/offset before
     author: Optional[str] = None,
     genre: Optional[str] = None,
     status: Optional[str] = None,
@@ -33,19 +33,19 @@ def list_books(
     limit: int = 10,
     offset: int = 0,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     return search_service.search_books(
         db=db,
         user_id=current_user.id,
-        q=title,                        # title param maps to q search
+        q=title,  # title param maps to q search
         author=author,
         genre=genre,
         status=status,
         sort=sort,
         order=order,
         limit=limit,
-        offset=offset
+        offset=offset,
     )
 
 

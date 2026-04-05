@@ -37,12 +37,12 @@ class Book(Base):
 class Progress(Base):
     __tablename__ = "progress"
 
-    id           = Column(Integer, primary_key=True, index=True)
-    status       = Column(String, default="not_started")  
-    current_page = Column(Integer, default=0)             
-    rating       = Column(Integer, nullable=True)
-    notes        = Column(String, nullable=True)
-    updated_at   = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    id = Column(Integer, primary_key=True, index=True)
+    status = Column(String, default="not_started")
+    current_page = Column(Integer, default=0)
+    rating = Column(Integer, nullable=True)
+    notes = Column(String, nullable=True)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     book_id = Column(Integer, ForeignKey("books.id"), nullable=False)
-    book    = relationship("Book", back_populates="progress")
+    book = relationship("Book", back_populates="progress")

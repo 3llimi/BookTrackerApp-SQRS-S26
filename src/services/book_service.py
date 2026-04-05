@@ -39,10 +39,7 @@ def get_books(db: Session, user_id: int, limit: int = 10, offset: int = 0):
 
 
 def get_book(db, book_id, user_id):
-    book = db.query(Book).filter(
-        Book.id == book_id,
-        Book.user_id == user_id
-    ).first()
+    book = db.query(Book).filter(Book.id == book_id, Book.user_id == user_id).first()
 
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
