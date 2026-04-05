@@ -1,0 +1,29 @@
+services:
+
+  # FastAPI backend
+  api:
+    build: .
+    ports:
+      - "8000:8000"         # host:container
+    volumes:
+      - ./books.db:/app/books.db   # persist SQLite db between restarts
+    env_file:
+      - .env                # loads JWT_SECRET from your .env file
+    restart: unless-stopped
+
+  # Streamlit frontend
+  frontend:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ./frontend:/app/frontend
+    ports:
+      - "8501:8501"
+    command: >
+      sh -c "pip install streamlit &&
+             streamlit run frontend/app.py
+             --server.port=8501
+             --server.address=0.0.0.0"
+    depends_on:
+      - api              
+    restart: unless-stopped
