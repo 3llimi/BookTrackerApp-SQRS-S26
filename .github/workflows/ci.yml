@@ -50,9 +50,7 @@ jobs:
 
       # GATE 3: complexity
       - name: Gate 3 — Complexity check with radon
-        run: |
-          radon cc src/ -a -s --min C && exit 1 || true
-          # exits with error if any function is grade C or worse
+        run: python scripts/check_complexity.py
 
       # GATE 4: tests + coverage
       - name: Gate 4 — Tests with pytest
