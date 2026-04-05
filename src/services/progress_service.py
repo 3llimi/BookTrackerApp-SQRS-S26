@@ -13,6 +13,29 @@ def _get_book(db: Session, book_id: int, user_id: int) -> Book:
     return book
 
 
+def _validate_current_page(current_page: int | None, total_pages: int | None) -> None:
+    if current_page and total_pages and current_page > total_pages:
+        detail = (
+            f"current_page ({current_page}) cannot exceed "
+            f"total_pages ({total_pages})"
+        )
+        raise HTTPException(status_code=422, detail=detail)
+
+
+def _validate_rating(rating: int | None) -> None:
+    if rating is not None and not (1 <= rating <= 5):
+        raise HTTPException(status_code=422, detail="Rating must be between 1 and 5")
+
+
+def _sync_status_with_page(progress: Progress, total_pages: int | None) -> None:
+    if total_pages and progress.current_page == total_pages:
+        progress.status = "completed"
+    elif progress.current_page == 0:
+        progress.status = "not_started"
+    else:
+        progress.status = "reading"
+
+
 # CREATE
 def create_progress(db, book_id, data, user_id):
     book = _get_book(db, book_id, user_id)
@@ -22,22 +45,8 @@ def create_progress(db, book_id, data, user_id):
             status_code=409, detail="Progress already exists for this book"
         )
 
-    if data.current_page and book.total_pages:
-        if data.current_page > book.total_pages:
-            detail = (
-                f"current_page ({data.current_page}) cannot exceed "
-                f"total_pages ({book.total_pages})"
-            )
-            raise HTTPException(
-                status_code=422,
-                detail=detail,
-            )
-
-    if data.rating is not None:
-        if not (1 <= data.rating <= 5):
-            raise HTTPException(
-                status_code=422, detail="Rating must be between 1 and 5"
-            )
+    _validate_current_page(data.current_page, book.total_pages)
+    _validate_rating(data.rating)
 
     progress = Progress(**data.model_dump(), book_id=book_id)
     db.add(progress)
@@ -70,33 +79,14 @@ def update_progress(db, book_id, data, user_id):
 
     updates = data.model_dump(exclude_unset=True)
 
-    # validate current_page <= total_pages
-    new_page = updates.get("current_page", progress.current_page)  # was pages_read
-    if book.total_pages and new_page > book.total_pages:
-        detail = (
-            f"current_page ({new_page}) cannot exceed "
-            f"total_pages ({book.total_pages})"
-        )
-        raise HTTPException(
-            status_code=422,
-            detail=detail,
-        )
-
-    # validate rating
-    new_rating = updates.get("rating")
-    if new_rating is not None and not (1 <= new_rating <= 5):
-        raise HTTPException(status_code=422, detail="Rating must be between 1 and 5")
+    new_page = updates.get("current_page", progress.current_page)
+    _validate_current_page(new_page, book.total_pages)
+    _validate_rating(updates.get("rating"))
 
     for field, value in updates.items():
         setattr(progress, field, value)
 
-    # auto-set status to completed when current_page == total_pages
-    if book.total_pages and progress.current_page == book.total_pages:
-        progress.status = "completed"  # was "finished"
-    elif progress.current_page == 0:
-        progress.status = "not_started"  # was "want_to_read"
-    elif progress.current_page < book.total_pages:
-        progress.status = "reading"
+    _sync_status_with_page(progress, book.total_pages)
 
     db.commit()
     db.refresh(progress)
