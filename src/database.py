@@ -6,8 +6,7 @@ from sqlalchemy.orm import sessionmaker
 DATABASE_URL = "sqlite:///./books.db"
 
 engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False}  # needed for SQLite only
+    DATABASE_URL, connect_args={"check_same_thread": False}  # needed for SQLite only
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -19,6 +18,6 @@ Base = declarative_base()
 def get_db():
     db = SessionLocal()
     try:
-        yield db        # gives the session to the route
+        yield db  # gives the session to the route
     finally:
-        db.close()      # always closes after the request is done
+        db.close()  # always closes after the request is done
