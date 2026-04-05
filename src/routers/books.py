@@ -3,9 +3,10 @@ from sqlalchemy.orm import Session
 from typing import List
 from src.database import get_db
 from src.schemas import BookCreate, BookUpdate, BookOut
-from src.services import book_service
+from src.services import book_service, search_service
 from src.services.auth_service import get_current_user
 from src.models import User
+from typing import Optional
 
 router = APIRouter(prefix="/books", tags=["books"])
 
@@ -23,13 +24,28 @@ def create_book(
 # GET /api/v1/books
 @router.get("/", response_model=List[BookOut])
 def list_books(
+    title: Optional[str] = None,       # was only limit/offset before
+    author: Optional[str] = None,
+    genre: Optional[str] = None,
+    status: Optional[str] = None,
+    sort: str = "created_at",
+    order: str = "desc",
     limit: int = 10,
     offset: int = 0,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user)
 ):
-    return book_service.get_books(
-        db, user_id=current_user.id, limit=limit, offset=offset
+    return search_service.search_books(
+        db=db,
+        user_id=current_user.id,
+        q=title,                        # title param maps to q search
+        author=author,
+        genre=genre,
+        status=status,
+        sort=sort,
+        order=order,
+        limit=limit,
+        offset=offset
     )
 
 

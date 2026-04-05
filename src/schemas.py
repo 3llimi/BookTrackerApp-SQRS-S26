@@ -4,15 +4,15 @@ from datetime import datetime
 
 
 class ProgressCreate(BaseModel):
-    status: str  # "Want to Read", "Reading", "Read"
-    pages_read: Optional[int] = 0
+    status: str = "not_started"        
+    current_page: Optional[int] = 0    
     rating: Optional[int] = None
     notes: Optional[str] = None
 
 
 class ProgressUpdate(BaseModel):
     status: Optional[str] = None
-    pages_read: Optional[int] = None
+    current_page: Optional[int] = None
     rating: Optional[int] = None
     notes: Optional[str] = None
 
@@ -20,10 +20,11 @@ class ProgressUpdate(BaseModel):
 class ProgressOut(BaseModel):
     id: int
     status: str
-    pages_read: int
-    rating: Optional[int] = None
-    notes: Optional[str] = None
+    current_page: int                  
+    rating: Optional[int]
+    notes: Optional[str]
     updated_at: datetime
+    progress_percentage: Optional[float] = None  
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -56,6 +57,7 @@ class BookOut(BaseModel):
     cover_url: Optional[str] = None
     created_at: datetime
     progress: Optional[ProgressOut] = None
+    progress_percentage: Optional[float] = None
 
     model_config = ConfigDict(from_attributes=True)
 

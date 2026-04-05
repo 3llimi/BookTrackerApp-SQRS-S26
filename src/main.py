@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from src.database import Base, engine
-from src.routers import books, progress, auth, openlibrary, search
+from src.routers import books, progress, auth, openlibrary
 
 
 @asynccontextmanager
@@ -28,7 +28,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(search.router, prefix="/api/v1")
 app.include_router(books.router, prefix="/api/v1")
 app.include_router(progress.router, prefix="/api/v1")
 app.include_router(openlibrary.router, prefix="/api/v1")
