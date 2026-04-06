@@ -8,13 +8,25 @@ def _get_book(db: Session, book_id: int, user_id: int) -> Book:
     book = db.query(Book).filter(Book.id == book_id, Book.user_id == user_id).first()
     if not book:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Book not found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Book not found",
         )
     return book
 
 
-def _validate_current_page(current_page: int | None, total_pages: int | None) -> None:
-    if current_page and total_pages and current_page > total_pages:
+def _get_progress_or_none(db: Session, book_id: int) -> Progress | None:
+    return db.query(Progress).filter(Progress.book_id == book_id).first()
+
+
+def _validate_current_page(
+    current_page: int | None,
+    total_pages: int | None,
+) -> None:
+    if (
+        current_page is not None
+        and total_pages is not None
+        and current_page > total_pages
+    ):
         detail = (
             f"current_page ({current_page}) cannot exceed "
             f"total_pages ({total_pages})"
@@ -28,27 +40,31 @@ def _validate_rating(rating: int | None) -> None:
 
 
 def _sync_status_with_page(progress: Progress, total_pages: int | None) -> None:
-    if total_pages and progress.current_page == total_pages:
-        progress.status = "completed"
-    elif progress.current_page == 0:
+    if progress.current_page == 0:
         progress.status = "not_started"
+    elif total_pages is not None and progress.current_page == total_pages:
+        progress.status = "completed"
     else:
         progress.status = "reading"
 
 
 # CREATE
-def create_progress(db, book_id, data, user_id):
+def create_progress(db: Session, book_id: int, data, user_id: int) -> Progress:
     book = _get_book(db, book_id, user_id)
 
-    if book.progress:
+    existing_progress = _get_progress_or_none(db, book_id)
+    if existing_progress:
         raise HTTPException(
-            status_code=409, detail="Progress already exists for this book"
+            status_code=409,
+            detail="Progress already exists for this book",
         )
 
     _validate_current_page(data.current_page, book.total_pages)
     _validate_rating(data.rating)
 
     progress = Progress(**data.model_dump(), book_id=book_id)
+    _sync_status_with_page(progress, book.total_pages)
+
     db.add(progress)
     db.commit()
     db.refresh(progress)
@@ -57,24 +73,26 @@ def create_progress(db, book_id, data, user_id):
 
 # GET
 def get_progress(db: Session, book_id: int, user_id: int) -> Progress:
-    book = _get_book(db, book_id, user_id)
+    _get_book(db, book_id, user_id)
 
-    if not book.progress:
+    progress = _get_progress_or_none(db, book_id)
+    if not progress:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No progress record found for this book",
         )
-    return book.progress
+    return progress
 
 
 # PATCH
-def update_progress(db, book_id, data, user_id):
+def update_progress(db: Session, book_id: int, data, user_id: int) -> Progress:
     book = _get_book(db, book_id, user_id)
-    progress = book.progress
+    progress = _get_progress_or_none(db, book_id)
 
     if not progress:
         raise HTTPException(
-            status_code=404, detail="No progress record found for this book"
+            status_code=404,
+            detail="No progress record found for this book",
         )
 
     updates = data.model_dump(exclude_unset=True)
