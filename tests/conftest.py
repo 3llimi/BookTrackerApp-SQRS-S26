@@ -14,31 +14,31 @@ if str(PROJECT_ROOT) not in sys.path:
 
 os.environ["JWT_SECRET"] = "test-secret-key"
 
-from src.database import Base, get_db
-from src.main import app
+from src.database import Base, get_db  # noqa: E402
+from src.main import app  # noqa: E402
 
 
 @pytest.fixture(scope="session")
-def test_engine():
-    engine = create_engine(
+def engine():
+    test_engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
-    yield engine
-    engine.dispose()
+    yield test_engine
+    test_engine.dispose()
 
 
 @pytest.fixture(scope="session")
-def tables(test_engine):
-    Base.metadata.create_all(bind=test_engine)
+def tables(engine):
+    Base.metadata.create_all(bind=engine)
     yield
-    Base.metadata.drop_all(bind=test_engine)
+    Base.metadata.drop_all(bind=engine)
 
 
 @pytest.fixture(scope="function")
-def db_session(test_engine, tables):
-    connection = test_engine.connect()
+def db_session(engine, tables):
+    connection = engine.connect()
     transaction = connection.begin()
 
     TestingSessionLocal = sessionmaker(
@@ -50,11 +50,12 @@ def db_session(test_engine, tables):
     )
     session = TestingSessionLocal()
 
-    yield session
-
-    session.close()
-    transaction.rollback()
-    connection.close()
+    try:
+        yield session
+    finally:
+        session.close()
+        transaction.rollback()
+        connection.close()
 
 
 @pytest.fixture(scope="function")
