@@ -1,6 +1,6 @@
 import pytest
 from uuid import uuid4
-
+from hypothesis import HealthCheck, given, settings, strategies as st
 from src.schemas import BookCreate, ProgressCreate
 from src.services import book_service, progress_service, search_service
 from src.services.auth_service import create_user
@@ -249,5 +249,61 @@ def test_search_is_scoped_to_current_user(db_session):
     )
 
     results = search_service.search_books(db_session, user_a.id, q="private")
+
+    assert results == []
+    
+
+def ensure_hypothesis_seeded_user(db_session):
+    from src.models import Book, User
+
+    user = db_session.query(User).filter(User.email == "hypothesis@test.com").first()
+    if user is None:
+        user = make_user(db_session, "hypothesis@test.com")
+
+    user_books = db_session.query(Book).filter(Book.user_id == user.id).count()
+    if user_books == 0:
+        seed_books(db_session, user.id)
+
+    return user
+
+
+@given(st.text())
+@settings(
+    max_examples=25,
+    deadline=None,
+    suppress_health_check=[HealthCheck.function_scoped_fixture],
+)
+def test_hypothesis_q_never_crashes_and_returns_list(db_session, q):
+    user = ensure_hypothesis_seeded_user(db_session)
+
+    results = search_service.search_books(db_session, user.id, q=q)
+
+    assert isinstance(results, list)
+
+
+@given(st.text())
+@settings(
+    max_examples=25,
+    deadline=None,
+    suppress_health_check=[HealthCheck.function_scoped_fixture],
+)
+def test_hypothesis_author_never_crashes_and_returns_list(db_session, author):
+    user = ensure_hypothesis_seeded_user(db_session)
+
+    results = search_service.search_books(db_session, user.id, author=author)
+
+    assert isinstance(results, list)
+
+
+@given(st.from_regex(r"\d{8,12}", fullmatch=True))
+@settings(
+    max_examples=25,
+    deadline=None,
+    suppress_health_check=[HealthCheck.function_scoped_fixture],
+)
+def test_hypothesis_non_matching_numeric_query_returns_empty_list(db_session, q):
+    user = ensure_hypothesis_seeded_user(db_session)
+
+    results = search_service.search_books(db_session, user.id, q=q)
 
     assert results == []
