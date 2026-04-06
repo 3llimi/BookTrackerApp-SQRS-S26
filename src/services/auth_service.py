@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-JWT_SECRET = os.getenv("JWT_SECRET")
+JWT_SECRET = os.getenv("JWT_SECRET") or "book-tracker-dev-secret-change-me"
 ALGORITHM = "HS256"
 EXPIRE_HOURS = 24
 
