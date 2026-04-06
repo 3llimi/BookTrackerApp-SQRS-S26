@@ -5,13 +5,13 @@ import os
 
 def test_jwt_token_contains_email():
     token = create_jwt_token("user@test.com")
-    payload = jwt.decode(token, os.getenv("JWT_SECRET"), algorithms=["HS256"])
+    payload = jwt.decode(token, "test-secret-key", algorithms=["HS256"])
     assert payload["sub"] == "user@test.com"
 
 
 def test_jwt_token_has_expiry():
     token = create_jwt_token("user@test.com")
-    payload = jwt.decode(token, os.getenv("JWT_SECRET"), algorithms=["HS256"])
+    payload = jwt.decode(token, "test-secret-key", algorithms=["HS256"])
     assert "exp" in payload
 
 
