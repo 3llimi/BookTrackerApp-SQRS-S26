@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from src.models import Progress, Book
 
+
 # helper: get book or 404
 def _get_book(db: Session, book_id: int, user_id: int) -> Book:
     book = db.query(Book).filter(Book.id == book_id, Book.user_id == user_id).first()
@@ -17,8 +18,15 @@ def _get_progress_or_none(db: Session, book_id: int) -> Progress | None:
     return db.query(Progress).filter(Progress.book_id == book_id).first()
 
 
-def _validate_current_page(current_page: int | None, total_pages: int | None) -> None:
-    if current_page is not None and total_pages is not None and current_page > total_pages:
+def _validate_current_page(
+    current_page: int | None,
+    total_pages: int | None,
+) -> None:
+    if (
+        current_page is not None
+        and total_pages is not None
+        and current_page > total_pages
+    ):
         detail = (
             f"current_page ({current_page}) cannot exceed "
             f"total_pages ({total_pages})"
@@ -38,6 +46,7 @@ def _sync_status_with_page(progress: Progress, total_pages: int | None) -> None:
         progress.status = "completed"
     else:
         progress.status = "reading"
+
 
 # CREATE
 def create_progress(db: Session, book_id: int, data, user_id: int) -> Progress:
@@ -61,6 +70,7 @@ def create_progress(db: Session, book_id: int, data, user_id: int) -> Progress:
     db.refresh(progress)
     return progress
 
+
 # GET
 def get_progress(db: Session, book_id: int, user_id: int) -> Progress:
     _get_book(db, book_id, user_id)
@@ -72,6 +82,7 @@ def get_progress(db: Session, book_id: int, user_id: int) -> Progress:
             detail="No progress record found for this book",
         )
     return progress
+
 
 # PATCH
 def update_progress(db: Session, book_id: int, data, user_id: int) -> Progress:
