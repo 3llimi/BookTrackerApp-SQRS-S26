@@ -37,7 +37,6 @@ def test_create_book_success(db_session):
     assert book.title == "Dune"
     assert book.author == "Frank Herbert"
     assert book.isbn == "9780441013593"
-
     stored = db_session.query(Book).filter(Book.id == book.id).first()
     assert stored is not None
     assert stored.title == "Dune"
