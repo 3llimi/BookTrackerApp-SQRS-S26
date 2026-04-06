@@ -233,8 +233,8 @@ def test_sql_injection_like_input_returns_no_results_and_does_not_crash(db_sessi
 
 
 def test_search_is_scoped_to_current_user(db_session):
-    user_a = make_user(db_session, "alpha@test.com")
-    user_b = make_user(db_session, "beta@test.com")
+    user_a = make_user(db_session)
+    user_b = make_user(db_session)
 
     seed_books(db_session, user_a.id)
     create_book_with_progress(
