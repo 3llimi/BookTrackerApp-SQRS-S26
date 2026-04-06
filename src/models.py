@@ -38,8 +38,8 @@ class Progress(Base):
     __tablename__ = "progress"
 
     id = Column(Integer, primary_key=True, index=True)
-    status = Column(String, nullable=False, default="want_to_read")
-    pages_read = Column(Integer, nullable=False, default=0)
+    status = Column(String, default="not_started")
+    current_page = Column(Integer, default=0)
     rating = Column(Integer, nullable=True)
     notes = Column(String, nullable=True)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

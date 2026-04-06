@@ -36,9 +36,9 @@ def test_book_update_partial():
 
 
 def test_progress_create_valid():
-    p = ProgressCreate(status="reading", pages_read=50)
+    p = ProgressCreate(status="reading", current_page=50)
     assert p.status == "reading"
-    assert p.pages_read == 50
+    assert p.current_page == 50
     assert p.rating is None
 
 
@@ -50,7 +50,7 @@ def test_progress_out_from_orm():
     class FakeProgressORM:
         id = 1
         status = "reading"
-        pages_read = 50
+        current_page = 50
         rating = None
         notes = None
         updated_at = datetime(2024, 1, 1)
@@ -66,8 +66,8 @@ def test_progress_out_from_orm():
 def test_book_out_with_nested_progress():
     class FakeProgressORM:
         id = 1
-        status = "finished"
-        pages_read = 300
+        status = "completed"
+        current_page = 300
         rating = 5
         notes = "Great book"
         updated_at = datetime(2024, 1, 1)
@@ -85,5 +85,5 @@ def test_book_out_with_nested_progress():
 
     book = BookOut.model_validate(FakeBookORM())
     assert book.title == "Dune"
-    assert book.progress.status == "finished"
+    assert book.progress.status == "completed"
     assert book.progress.rating == 5

@@ -47,7 +47,7 @@ def setup_books(headers):
     id3 = create_book("The Hobbit", "J.R.R. Tolkien", headers=headers, genre="Fantasy")
 
     # use valid statuses
-    add_progress(id1, headers, "finished")
+    add_progress(id1, headers, "completed")
     add_progress(id2, headers, "reading")
     add_progress(id3, headers, "not_started")
 
@@ -58,7 +58,7 @@ def setup_books(headers):
 def test_search_by_q_title():
     headers = get_auth_headers()
     setup_books(headers)
-    response = client.get("/api/v1/books/search?q=dune", headers=headers)
+    response = client.get("/api/v1/books?title=dune", headers=headers)
     assert response.status_code == 200
     titles = [b["title"] for b in response.json()]
     assert "Dune" in titles
@@ -69,7 +69,7 @@ def test_search_by_q_title():
 def test_search_by_q_author():
     headers = get_auth_headers()
     setup_books(headers)
-    response = client.get("/api/v1/books/search?q=tolkien", headers=headers)
+    response = client.get("/api/v1/books?author=tolkien", headers=headers)
     assert response.status_code == 200
     titles = [b["title"] for b in response.json()]
     assert "The Hobbit" in titles
@@ -78,7 +78,7 @@ def test_search_by_q_author():
 def test_filter_by_genre():
     headers = get_auth_headers()
     setup_books(headers)
-    response = client.get("/api/v1/books/search?genre=Fantasy", headers=headers)
+    response = client.get("/api/v1/books?genre=Fantasy", headers=headers)
     assert response.status_code == 200
     for book in response.json():
         assert book["genre"] == "Fantasy"
@@ -87,16 +87,16 @@ def test_filter_by_genre():
 def test_filter_by_status():
     headers = get_auth_headers()
     setup_books(headers)
-    response = client.get("/api/v1/books/search?status=finished", headers=headers)
+    response = client.get("/api/v1/books?status=completed", headers=headers)
     assert response.status_code == 200
     for book in response.json():
-        assert book["progress"]["status"] == "finished"
+        assert book["progress"]["status"] == "completed"
 
 
 def test_sort_by_title_asc():
     headers = get_auth_headers()
     setup_books(headers)
-    response = client.get("/api/v1/books/search?sort=title&order=asc", headers=headers)
+    response = client.get("/api/v1/books?sort=title&order=asc", headers=headers)
     assert response.status_code == 200
     titles = [b["title"] for b in response.json()]
     assert titles == sorted(titles)
@@ -106,7 +106,7 @@ def test_composable_filters():
     headers = get_auth_headers()
     setup_books(headers)
     response = client.get(
-        "/api/v1/books/search?q=dune&genre=Sci-Fi&sort=title&order=asc", headers=headers
+        "/api/v1/books?title=dune&genre=Sci-Fi&sort=title&order=asc", headers=headers
     )
     assert response.status_code == 200
     for book in response.json():
@@ -116,13 +116,13 @@ def test_composable_filters():
 
 def test_invalid_sort_field():
     headers = get_auth_headers()
-    response = client.get("/api/v1/books/search?sort=invalid_field", headers=headers)
+    response = client.get("/api/v1/books?sort=invalid_field", headers=headers)
     assert response.status_code == 422
 
 
 def test_no_filters_returns_all():
     headers = get_auth_headers()
     setup_books(headers)
-    response = client.get("/api/v1/books/search", headers=headers)
+    response = client.get("/api/v1/books", headers=headers)
     assert response.status_code == 200
     assert isinstance(response.json(), list)

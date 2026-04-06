@@ -2,12 +2,18 @@ import subprocess
 import sys
 
 result = subprocess.run(
-    ["radon", "cc", "src/", "-a", "-s"],
+    [sys.executable, "-m", "radon", "cc", "src/", "-a", "-s"],
     capture_output=True,
-    text=True
+    text=True,
 )
 
 print(result.stdout)
+
+if result.returncode != 0:
+    if result.stderr:
+        print(result.stderr)
+    print("❌ Complexity gate failed — unable to run radon")
+    sys.exit(result.returncode)
 
 # the grade is the letter AFTER the dash at the end of each line
 bad_grades = []

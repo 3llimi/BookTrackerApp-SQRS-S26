@@ -36,12 +36,12 @@ def test_create_progress():
     book_id = create_test_book(headers)
     response = client.post(
         f"/api/v1/books/{book_id}/progress",
-        json={"status": "reading", "pages_read": 50},
+        json={"status": "reading", "current_page": 50},
         headers=headers,
     )
     assert response.status_code == 201
     assert response.json()["status"] == "reading"
-    assert response.json()["pages_read"] == 50
+    assert response.json()["current_page"] == 50
 
 
 def test_create_progress_409_if_already_exists():
@@ -90,16 +90,16 @@ def test_patch_progress_partial():
     book_id = create_test_book(headers)
     client.post(
         f"/api/v1/books/{book_id}/progress",
-        json={"status": "reading", "pages_read": 50},
+        json={"status": "reading", "current_page": 50},
         headers=headers,
     )
 
-    # only update pages_read
+    # only update current_page
     response = client.patch(
-        f"/api/v1/books/{book_id}/progress", json={"pages_read": 100}, headers=headers
+        f"/api/v1/books/{book_id}/progress", json={"current_page": 100}, headers=headers
     )
     assert response.status_code == 200
-    assert response.json()["pages_read"] == 100
+    assert response.json()["current_page"] == 100
     assert response.json()["status"] == "reading"  # untouched
 
 
@@ -112,7 +112,7 @@ def test_patch_progress_pages_exceed_total():
 
     response = client.patch(
         f"/api/v1/books/{book_id}/progress",
-        json={"pages_read": 999},  # exceeds total_pages=200
+        json={"current_page": 999},  # exceeds total_pages=200
         headers=headers,
     )
     assert response.status_code == 422
@@ -140,9 +140,9 @@ def test_auto_finish_when_pages_complete():
         f"/api/v1/books/{book_id}/progress", json={"status": "reading"}, headers=headers
     )
 
-    # set pages_read == total_pages → should auto-set status to finished
+    # set current_page == total_pages -> should auto-set status to completed
     response = client.patch(
-        f"/api/v1/books/{book_id}/progress", json={"pages_read": 300}, headers=headers
+        f"/api/v1/books/{book_id}/progress", json={"current_page": 300}, headers=headers
     )
     assert response.status_code == 200
-    assert response.json()["status"] == "finished"  # auto-set!
+    assert response.json()["status"] == "completed"  # auto-set

@@ -38,13 +38,19 @@ def get_books(db: Session, user_id: int, limit: int = 10, offset: int = 0):
     )
 
 
-def get_book(db: Session, book_id: int, user_id: int) -> Book:
-    """Get a single book by ID for the user. Raises 404 if not found."""
+def get_book(db, book_id, user_id):
     book = db.query(Book).filter(Book.id == book_id, Book.user_id == user_id).first()
+
     if not book:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Book not found"
+        raise HTTPException(status_code=404, detail="Book not found")
+
+    if book.progress and book.total_pages:
+        book.progress_percentage = round(
+            (book.progress.current_page / book.total_pages) * 100, 2
         )
+    else:
+        book.progress_percentage = None
+
     return book
 
 
