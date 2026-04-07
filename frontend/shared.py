@@ -296,11 +296,31 @@ def inject_theme() -> None:
                 border-radius: 999px;
                 border: 1px solid transparent;
                 background: linear-gradient(135deg, var(--bt-teal) 0%, var(--bt-teal-deep) 100%);
-                color: white;
+                color: #ffffff !important;
                 font-weight: 700;
                 min-height: 2.35rem;
                 box-shadow: 0 10px 22px rgba(18, 115, 107, 0.18);
                 transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+            }
+
+            .stButton > button[kind="primary"],
+            .stFormSubmitButton > button[kind="primary"] {
+                color: #ffffff !important;
+            }
+
+            .stButton > button[kind="primary"] *,
+            .stFormSubmitButton > button[kind="primary"] *,
+            .stDownloadButton > button * {
+                color: #ffffff !important;
+                fill: #ffffff !important;
+            }
+
+            .stFormSubmitButton > button,
+            .stFormSubmitButton > button *,
+            [data-testid="stBaseButton-primary"],
+            [data-testid="stBaseButton-primary"] * {
+                color: #ffffff !important;
+                fill: #ffffff !important;
             }
 
             .stFormSubmitButton > button {
@@ -401,6 +421,29 @@ def inject_theme() -> None:
 
             .stAlert {
                 border-radius: 16px;
+            }
+
+            [data-testid="stAlertContainer"] [role="alert"],
+            [data-testid="stAlertContainer"] [role="alert"] *,
+            [data-testid="stAlertContainer"] .stAlert,
+            [data-testid="stAlertContainer"] .stAlert * {
+                color: #ffffff !important;
+            }
+
+            [data-testid="stAlertContainer"] [role="alert"] {
+                background: linear-gradient(135deg, #1f5f96 0%, #194d7a 100%) !important;
+                border: 1px solid rgba(255, 255, 255, 0.26) !important;
+            }
+
+            [data-testid="stToast"],
+            [data-testid="stToast"] * {
+                color: #ffffff !important;
+                fill: #ffffff !important;
+            }
+
+            [data-testid="stToast"] {
+                background: linear-gradient(135deg, #1f5f96 0%, #194d7a 100%) !important;
+                border: 1px solid rgba(255, 255, 255, 0.22) !important;
             }
 
             @keyframes bt-fade-up {

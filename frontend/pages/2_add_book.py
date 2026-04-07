@@ -21,7 +21,6 @@ from shared import (
 FORM_FIELDS = {
     "title": "book_form_title",
     "author": "book_form_author",
-    "isbn": "book_form_isbn",
     "genre": "book_form_genre",
     "total_pages": "book_form_total_pages",
     "cover_url": "book_form_cover_url",
@@ -31,7 +30,6 @@ FORM_FIELDS = {
 def set_form_values(book_data: dict[str, object]) -> None:
     st.session_state[FORM_FIELDS["title"]] = book_data.get("title", "") or ""
     st.session_state[FORM_FIELDS["author"]] = book_data.get("author", "") or ""
-    st.session_state[FORM_FIELDS["isbn"]] = book_data.get("isbn", "") or ""
     st.session_state[FORM_FIELDS["genre"]] = book_data.get("genre", "") or ""
     total_pages = book_data.get("total_pages")
     st.session_state[FORM_FIELDS["total_pages"]] = "" if total_pages is None else str(total_pages)
@@ -53,7 +51,6 @@ def get_form_payload() -> dict[str, object]:
     return {
         "title": st.session_state.get(FORM_FIELDS["title"], "").strip(),
         "author": st.session_state.get(FORM_FIELDS["author"], "").strip(),
-        "isbn": st.session_state.get(FORM_FIELDS["isbn"], "").strip() or None,
         "genre": st.session_state.get(FORM_FIELDS["genre"], "").strip() or None,
         "total_pages": total_pages,
         "cover_url": st.session_state.get(FORM_FIELDS["cover_url"], "").strip() or None,
@@ -196,7 +193,6 @@ with form_col:
         st.text_input("Author", key=FORM_FIELDS["author"], placeholder="James Clear")
         field_col_1, field_col_2 = st.columns(2)
         with field_col_1:
-            st.text_input("ISBN", key=FORM_FIELDS["isbn"], placeholder="9780735211292")
             st.text_input(
                 "Total pages",
                 key=FORM_FIELDS["total_pages"],
@@ -204,10 +200,10 @@ with form_col:
             )
         with field_col_2:
             st.text_input("Genre", key=FORM_FIELDS["genre"], placeholder="Self-help")
-            st.text_input("Cover URL", key=FORM_FIELDS["cover_url"], placeholder="https://...")
+        st.text_input("Cover URL", key=FORM_FIELDS["cover_url"], placeholder="https://...")
 
         submit_label = "Save Changes" if is_edit_mode else "Add Book"
-        submitted = st.form_submit_button(submit_label, width="stretch")
+        submitted = st.form_submit_button(submit_label, width="stretch", type="primary")
 
     if submitted:
         try:

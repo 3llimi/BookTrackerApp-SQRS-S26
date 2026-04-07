@@ -32,7 +32,7 @@ with login_tab:
     with st.form("login_form", clear_on_submit=False):
         login_email = st.text_input("Email", placeholder="reader@example.com")
         login_password = st.text_input("Password", type="password")
-        login_submitted = st.form_submit_button("Login", width="stretch")
+        login_submitted = st.form_submit_button("Login", width="stretch", type="primary")
 
     if login_submitted:
         if not login_email or not login_password:
@@ -57,7 +57,7 @@ with register_tab:
         register_email = st.text_input("Email", key="register_email", placeholder="reader@example.com")
         register_password = st.text_input("Password", key="register_password", type="password")
         confirm_password = st.text_input("Confirm password", key="register_confirm_password", type="password")
-        register_submitted = st.form_submit_button("Create account", width="stretch")
+        register_submitted = st.form_submit_button("Create account", width="stretch", type="primary")
 
     if register_submitted:
         if not register_email or not register_password or not confirm_password:
