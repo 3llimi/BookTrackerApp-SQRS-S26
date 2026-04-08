@@ -14,12 +14,13 @@ from shared import (
     api_request,
     configure_page,
     get_book_status,
-    get_status_badge,
+    get_status_text,
     go_to_page,
     render_empty_state,
     render_hero,
     render_sidebar,
     require_auth,
+    show_notice,
 )
 
 STATUS_FILTER_MAP = {
@@ -41,9 +42,10 @@ require_auth()
 render_sidebar("pages/3_search.py")
 render_hero(
     "Search Your Collection",
-    "Type to search across titles and authors, then narrow the result list with clean sidebar filters.",
+    "Type to search across your library. Filters and sorting are applied instantly while you type.",
     kicker="Search & Filter",
 )
+show_notice()
 
 try:
     all_books = api_request(
@@ -100,6 +102,7 @@ except RuntimeError as exc:
     st.stop()
 
 st.write(f"**{len(results)} result(s)**")
+st.caption("Click a row to open that book in the Progress page.")
 
 if not results:
     render_empty_state(
@@ -110,11 +113,9 @@ if not results:
 
 for book in results:
     status = get_book_status(book)
-    row_col, badge_col = st.columns([4.3, 1.2])
-    with row_col:
+    with st.container(border=True):
         row_label = f'{book["title"]} | {book["author"]} | {book.get("genre") or "No genre"}'
         if st.button(row_label, key=f"search_row_{book['id']}", width="stretch", type="secondary"):
             st.session_state["selected_book_id"] = book["id"]
             go_to_page(PROGRESS_PAGE)
-    with badge_col:
-        st.markdown(get_status_badge(status), unsafe_allow_html=True)
+        st.caption(f"Status: {get_status_text(status)}")

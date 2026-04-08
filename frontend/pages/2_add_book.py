@@ -16,6 +16,8 @@ from shared import (
     render_hero,
     render_sidebar,
     require_auth,
+    set_notice,
+    show_notice,
 )
 
 FORM_FIELDS = {
@@ -83,15 +85,16 @@ if editing_book_id and st.session_state.get("book_form_loaded_id") != editing_bo
 
 render_hero(
     "Edit Book" if is_edit_mode else "Add Book",
-    "Keep the form simple, import details from Open Library when it helps, and save everything with one clear submit action.",
+    "Fill the form manually or import from Open Library. After import, values are applied immediately and confirmed above the form.",
     kicker="Book Form",
 )
+show_notice()
 
 action_col, back_col = st.columns([1, 1])
 with action_col:
-    if st.button("Start a fresh form", width="stretch", type="secondary"):
+    if st.button("New Empty Form", width="stretch", type="secondary"):
         reset_form()
-        st.toast("Ready for a new book.")
+        set_notice("info", "Form reset. You can add a new book now.")
         st.rerun()
 with back_col:
     if st.button("Back to My Books", width="stretch"):
@@ -125,6 +128,11 @@ with st.expander("Import from Open Library", expanded=False):
                 st.error(str(exc))
 
     results = st.session_state.get("openlibrary_results", [])
+    if query_clean and results:
+        st.caption(f"Found {len(results)} result(s). Choose one to pre-fill the form.")
+    if query_clean and not results:
+        st.info("No matching books were found for this query.")
+
     if results:
         for idx, result in enumerate(results):
             isbn = result.get("isbn")
@@ -172,7 +180,12 @@ with st.expander("Import from Open Library", expanded=False):
                             detail["author"] = detail.get("author") or result.get("author") or ""
                             detail["genre"] = detail.get("genre") or st.session_state.get(FORM_FIELDS["genre"], "")
                             set_form_values(detail)
-                            st.toast("Book details imported into the form.")
+                            st.session_state["openlibrary_results"] = []
+                            st.session_state["openlibrary_last_query"] = st.session_state.get("openlibrary_query", "").strip()
+                            set_notice(
+                                "success",
+                                f"Imported '{detail.get('title') or 'book'}'. You can review fields below and save.",
+                            )
                             st.rerun()
                         except RuntimeError as exc:
                             if show_openlibrary_timeout(str(exc)):
@@ -224,7 +237,7 @@ with form_col:
                 st.session_state["book_id"] = saved_book["id"]
                 st.session_state["editing_book_id"] = saved_book["id"]
                 st.session_state["book_form_loaded_id"] = saved_book["id"]
-                st.toast("Book saved successfully.")
+                set_notice("success", "Book saved successfully.")
                 st.rerun()
             except RuntimeError as exc:
                 st.error(str(exc))

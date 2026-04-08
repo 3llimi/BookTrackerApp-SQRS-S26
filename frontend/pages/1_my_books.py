@@ -15,12 +15,14 @@ from shared import (
     cover_image_source,
     get_book_status,
     get_progress_value,
-    get_status_badge,
+    get_status_text,
     go_to_page,
     render_empty_state,
     render_hero,
     render_sidebar,
     require_auth,
+    set_notice,
+    show_notice,
 )
 
 
@@ -29,13 +31,14 @@ require_auth()
 render_sidebar("pages/1_my_books.py")
 render_hero(
     "My Books",
-    "Browse your collection, jump into editing, and keep progress updates one click away.",
+    "Browse your books, edit metadata, track reading progress, or remove items in one place.",
     kicker="Your Library",
 )
+show_notice()
 
 header_left, header_right = st.columns([3, 1])
 with header_right:
-    if st.button("Add a new book", width="stretch"):
+    if st.button("Add New Book", width="stretch"):
         st.session_state["book_id"] = None
         st.session_state["editing_book_id"] = None
         st.session_state["book_form_loaded_id"] = None
@@ -77,9 +80,9 @@ for row_start in range(0, len(books), 3):
                     cover_image_source(book["title"], book.get("cover_url")),
                     width="stretch",
                 )
-                st.markdown(f'<div class="bt-card-title">{book["title"]}</div>', unsafe_allow_html=True)
-                st.markdown(f'<div class="bt-card-meta">{book["author"]}</div>', unsafe_allow_html=True)
-                st.markdown(get_status_badge(status), unsafe_allow_html=True)
+                st.subheader(book["title"])
+                st.caption(f'Author: {book["author"]}')
+                st.caption(f"Status: {get_status_text(status)}")
 
                 if total_pages:
                     st.progress(min(current_page / total_pages, 1.0))
@@ -100,7 +103,7 @@ for row_start in range(0, len(books), 3):
                         go_to_page(ADD_BOOK_PAGE)
 
                 with progress_col:
-                    if st.button("Track", key=f"progress_{book['id']}", width="stretch"):
+                    if st.button("Progress", key=f"progress_{book['id']}", width="stretch"):
                         st.session_state["selected_book_id"] = book["id"]
                         go_to_page(PROGRESS_PAGE)
 
@@ -114,7 +117,7 @@ for row_start in range(0, len(books), 3):
                                 st.session_state["editing_book_id"] = None
                             if st.session_state.get("selected_book_id") == book["id"]:
                                 st.session_state["selected_book_id"] = None
-                            st.toast(f"Deleted '{book['title']}'.")
+                            set_notice("success", f"Deleted '{book['title']}'.")
                             st.rerun()
                         except RuntimeError as exc:
                             st.error(str(exc))

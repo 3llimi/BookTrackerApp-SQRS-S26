@@ -20,6 +20,8 @@ from shared import (
     render_hero,
     render_sidebar,
     require_auth,
+    set_notice,
+    show_notice,
 )
 
 
@@ -52,9 +54,10 @@ require_auth()
 render_sidebar("pages/4_progress.py")
 render_hero(
     "Reading Progress",
-    "Pick a book, update your pages, notes, and rating, and watch the reading summary refresh underneath.",
+    "Pick a book and update status, pages, rating, and notes. Changes are saved automatically.",
     kicker="Progress Tracker",
 )
+show_notice()
 
 try:
     books = api_request(
@@ -174,7 +177,7 @@ if snapshot != current_payload:
             )
         st.session_state["progress_loaded_book_id"] = None
         st.session_state["progress_snapshot"] = None
-        st.toast("Progress updated.")
+        set_notice("success", "Progress updated.")
         st.rerun()
     except RuntimeError as exc:
         st.error(str(exc))

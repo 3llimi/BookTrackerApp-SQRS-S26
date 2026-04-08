@@ -7,7 +7,16 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 import streamlit as st
 
-from shared import MY_BOOKS_PAGE, api_request, configure_page, go_to_page, render_hero, render_sidebar
+from shared import (
+    MY_BOOKS_PAGE,
+    api_request,
+    configure_page,
+    go_to_page,
+    render_hero,
+    render_sidebar,
+    set_notice,
+    show_notice,
+)
 
 
 configure_page("Login")
@@ -19,6 +28,7 @@ if st.session_state.get("token"):
 notice = st.session_state.pop("auth_notice", None)
 if notice:
     st.info(notice)
+show_notice()
 
 render_hero(
     "Welcome back to your library",
@@ -47,7 +57,7 @@ with login_tab:
                         json={"email": login_email.strip(), "password": login_password},
                     )
                 st.session_state["token"] = response["access_token"]
-                st.toast("Login successful.")
+                set_notice("success", "Login successful.")
                 go_to_page(MY_BOOKS_PAGE)
             except RuntimeError as exc:
                 st.error(str(exc))
@@ -80,7 +90,7 @@ with register_tab:
                         json={"email": register_email.strip(), "password": register_password},
                     )
                 st.session_state["token"] = response["access_token"]
-                st.toast("Account created and signed in.")
+                set_notice("success", "Account created and signed in.")
                 go_to_page(MY_BOOKS_PAGE)
             except RuntimeError as exc:
                 st.error(str(exc))
