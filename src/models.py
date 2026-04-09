@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, DateTime, func, ForeignKey, CheckConstraint
+from sqlalchemy import Column, Integer, String, DateTime, func
+from sqlalchemy import ForeignKey, CheckConstraint
 from sqlalchemy.orm import relationship
 from src.database import Base
 
@@ -50,7 +51,11 @@ class Progress(Base):
     current_page = Column(Integer, nullable=False, default=0)
     rating = Column(Integer, nullable=True)
     notes = Column(String, nullable=True)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now()
+    )
 
     book_id = Column(Integer, ForeignKey("books.id"), nullable=False, unique=True)
     book = relationship("Book", back_populates="progress")
