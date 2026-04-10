@@ -12,26 +12,50 @@ SEARCH_FIELDS = (
 )
 
 
-def _parse_total_pages(value: object) -> int | None:
-    if value is None or isinstance(value, bool):
+def _parse_non_negative_int(value: object) -> int | None:
+    if isinstance(value, bool):
         return None
 
     if isinstance(value, int):
         return value if value >= 0 else None
 
-    if isinstance(value, float):
-        if value.is_integer() and value >= 0:
-            return int(value)
+    return None
+
+
+def _parse_integral_float(value: object) -> int | None:
+    if not isinstance(value, float):
         return None
 
-    if isinstance(value, str):
-        match = re.search(r"\d+", value.replace(",", ""))
-        if not match:
-            return None
-        pages = int(match.group(0))
-        return pages if pages >= 0 else None
+    if value.is_integer() and value >= 0:
+        return int(value)
 
     return None
+
+
+def _parse_pages_from_string(value: object) -> int | None:
+    if not isinstance(value, str):
+        return None
+
+    match = re.search(r"\d+", value.replace(",", ""))
+    if not match:
+        return None
+
+    return int(match.group(0))
+
+
+def _parse_total_pages(value: object) -> int | None:
+    if value is None:
+        return None
+
+    parsed = _parse_non_negative_int(value)
+    if parsed is not None:
+        return parsed
+
+    parsed = _parse_integral_float(value)
+    if parsed is not None:
+        return parsed
+
+    return _parse_pages_from_string(value)
 
 
 def _make_request(
