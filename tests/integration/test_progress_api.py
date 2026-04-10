@@ -1,7 +1,6 @@
 from uuid import uuid4
 import pytest
 
-
 PROGRESS_RESPONSE_FIELDS = {
     "id",
     "status",

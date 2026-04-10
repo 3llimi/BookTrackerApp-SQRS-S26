@@ -147,12 +147,17 @@ def test_delete_book_cascade_deletes_progress(db_session):
     db_session.add(progress)
     db_session.commit()
 
-    assert db_session.query(Progress).filter(Progress.book_id == created.id).first() is not None
+    assert (
+        db_session.query(Progress).filter(Progress.book_id == created.id).first()
+        is not None
+    )
 
     book_service.delete_book(db_session, created.id, user_id=user.id)
 
     deleted_book = db_session.query(Book).filter(Book.id == created.id).first()
-    deleted_progress = db_session.query(Progress).filter(Progress.book_id == created.id).first()
+    deleted_progress = (
+        db_session.query(Progress).filter(Progress.book_id == created.id).first()
+    )
 
     assert deleted_book is None
     assert deleted_progress is None

@@ -51,17 +51,21 @@ def seed_books(client, headers):
     dune_messiah = create_book(
         client, headers, "Dune Messiah", "Frank Herbert", "Sci-Fi", 280
     )
-    hobbit = create_book(client, headers, "The Hobbit", "J.R.R. Tolkien", "Fantasy", 320)
+    hobbit = create_book(
+        client, headers, "The Hobbit", "J.R.R. Tolkien", "Fantasy", 320
+    )
     clean_code = create_book(
         client, headers, "Clean Code", "Robert Martin", "Programming", 450
     )
-    foundation = create_book(client, headers, "Foundation", "Isaac Asimov", "Sci-Fi", 255)
+    foundation = create_book(
+        client, headers, "Foundation", "Isaac Asimov", "Sci-Fi", 255
+    )
 
-    add_progress(client, headers, dune, 300, rating=5)          # completed
+    add_progress(client, headers, dune, 300, rating=5)  # completed
     add_progress(client, headers, dune_messiah, 120, rating=4)  # reading
-    add_progress(client, headers, hobbit, 0, rating=3)          # not_started
-    add_progress(client, headers, clean_code, 200, rating=2)    # reading
-    add_progress(client, headers, foundation, 255, rating=1)    # completed
+    add_progress(client, headers, hobbit, 0, rating=3)  # not_started
+    add_progress(client, headers, clean_code, 200, rating=2)  # reading
+    add_progress(client, headers, foundation, 255, rating=1)  # completed
 
 
 def test_filter_by_title_returns_exact_count(client):
