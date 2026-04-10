@@ -1,4 +1,5 @@
 import httpx
+import re
 from fastapi import HTTPException
 
 SEARCH_URL = "https://openlibrary.org/search.json"
@@ -9,6 +10,28 @@ TIMEOUT = 5.0
 SEARCH_FIELDS = (
     "title,author_name,isbn,cover_i,first_publish_year,subject,number_of_pages_median"
 )
+
+
+def _parse_total_pages(value: object) -> int | None:
+    if value is None or isinstance(value, bool):
+        return None
+
+    if isinstance(value, int):
+        return value if value >= 0 else None
+
+    if isinstance(value, float):
+        if value.is_integer() and value >= 0:
+            return int(value)
+        return None
+
+    if isinstance(value, str):
+        match = re.search(r"\d+", value.replace(",", ""))
+        if not match:
+            return None
+        pages = int(match.group(0))
+        return pages if pages >= 0 else None
+
+    return None
 
 
 def _make_request(
@@ -111,7 +134,7 @@ def search_books(q: str) -> list:
         isbn_list = doc.get("isbn", [])
         isbn = isbn_list[0] if isbn_list else None
         genre = _extract_genre(doc.get("subject"))
-        total_pages = doc.get("number_of_pages_median")
+        total_pages = _parse_total_pages(doc.get("number_of_pages_median"))
 
         results.append(
             {
@@ -137,8 +160,10 @@ def get_book_by_isbn(isbn: str) -> dict:
     covers = data.get("covers", [])
     cover_url = COVER_URL.format(cover_i=covers[0]) if covers else None
 
-    # number_of_pages or pagination field
-    total_pages = data.get("number_of_pages") or data.get("pagination")
+    raw_total_pages = data.get("number_of_pages")
+    if raw_total_pages is None:
+        raw_total_pages = data.get("pagination")
+    total_pages = _parse_total_pages(raw_total_pages)
     genre = _extract_genre(data.get("subjects"))
 
     if not genre:

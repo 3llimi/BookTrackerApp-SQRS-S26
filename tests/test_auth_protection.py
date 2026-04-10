@@ -1,14 +1,14 @@
-from fastapi.testclient import TestClient
-from src.main import app
-
-client = TestClient(app)
+from uuid import uuid4
 
 
 # helpers
 
 
-def register_and_login(email="test@test.com", password="password123"):
+def register_and_login(client, email=None, password="password123"):
     """Register a user and return their auth token"""
+    if email is None:
+        email = f"auth-protection-{uuid4().hex[:8]}@test.com"
+
     client.post("/api/v1/auth/register", json={"email": email, "password": password})
     response = client.post(
         "/api/v1/auth/login", json={"email": email, "password": password}
@@ -22,19 +22,19 @@ def auth_headers(token: str) -> dict:
 
 
 # auth protection tests
-def test_books_requires_auth():
+def test_books_requires_auth(client):
     # no token return 401
     response = client.get("/api/v1/books/")
     assert response.status_code == 401
 
 
-def test_books_with_valid_token():
-    token = register_and_login("user1@test.com")
+def test_books_with_valid_token(client):
+    token = register_and_login(client, "user1@test.com")
     response = client.get("/api/v1/books/", headers=auth_headers(token))
     assert response.status_code == 200
 
 
-def test_invalid_token_returns_401():
+def test_invalid_token_returns_401(client):
     response = client.get(
         "/api/v1/books/", headers={"Authorization": "Bearer totally.fake.token"}
     )
@@ -42,9 +42,9 @@ def test_invalid_token_returns_401():
 
 
 # per-user isolation tests
-def test_user_cannot_see_other_users_books():
+def test_user_cannot_see_other_users_books(client):
     # User A creates a book
-    token_a = register_and_login("usera@test.com")
+    token_a = register_and_login(client, "usera@test.com")
     create_res = client.post(
         "/api/v1/books/",
         json={"title": "User A Book", "author": "Author A"},
@@ -53,14 +53,14 @@ def test_user_cannot_see_other_users_books():
     book_id = create_res.json()["id"]
 
     # User B tries to access it → 404 (not 403, don't leak existence)
-    token_b = register_and_login("userb@test.com")
+    token_b = register_and_login(client, "userb@test.com")
     response = client.get(f"/api/v1/books/{book_id}", headers=auth_headers(token_b))
     assert response.status_code == 404
 
 
-def test_user_only_sees_their_own_books():
-    token_a = register_and_login("alpha@test.com")
-    token_b = register_and_login("beta@test.com")
+def test_user_only_sees_their_own_books(client):
+    token_a = register_and_login(client, "alpha@test.com")
+    token_b = register_and_login(client, "beta@test.com")
 
     # User A creates a book
     client.post(
@@ -76,8 +76,8 @@ def test_user_only_sees_their_own_books():
     assert "Alpha Book" not in titles
 
 
-def test_user_can_delete_own_book():
-    token = register_and_login("owner@test.com")
+def test_user_can_delete_own_book(client):
+    token = register_and_login(client, "owner@test.com")
     create_res = client.post(
         "/api/v1/books/",
         json={"title": "My Book", "author": "Me"},
@@ -89,8 +89,8 @@ def test_user_can_delete_own_book():
     assert response.status_code == 204
 
 
-def test_user_cannot_delete_other_users_book():
-    token_a = register_and_login("owner2@test.com")
+def test_user_cannot_delete_other_users_book(client):
+    token_a = register_and_login(client, "owner2@test.com")
     create_res = client.post(
         "/api/v1/books/",
         json={"title": "Protected Book", "author": "Owner"},
@@ -98,6 +98,6 @@ def test_user_cannot_delete_other_users_book():
     )
     book_id = create_res.json()["id"]
 
-    token_b = register_and_login("thief@test.com")
+    token_b = register_and_login(client, "thief@test.com")
     response = client.delete(f"/api/v1/books/{book_id}", headers=auth_headers(token_b))
     assert response.status_code == 404  # 404 not 403 — don't leak existence

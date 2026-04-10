@@ -1,13 +1,9 @@
-from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
 from uuid import uuid4
-from src.main import app
 import httpx
 
-client = TestClient(app)
 
-
-def get_auth_headers(email=None, password="password123"):
+def get_auth_headers(client, email=None, password="password123"):
     if email is None:
         email = f"openlibrary-{uuid4().hex[:8]}@test.com"
 
@@ -30,8 +26,8 @@ def mock_response(json_data: dict, status_code: int = 200):
 
 
 # search tests
-def test_search_returns_simplified_list():
-    headers = get_auth_headers()
+def test_search_returns_simplified_list(client):
+    headers = get_auth_headers(client)
     fake_response = {
         "docs": [
             {
@@ -60,8 +56,8 @@ def test_search_returns_simplified_list():
     assert data[0]["total_pages"] == 412
 
 
-def test_search_handles_missing_fields():
-    headers = get_auth_headers()
+def test_search_handles_missing_fields(client):
+    headers = get_auth_headers(client)
     # some Open Library docs have missing fields — should not crash
     fake_response = {"docs": [{"title": "Some Book"}]}  # no author, isbn, cover_i
 
@@ -78,8 +74,8 @@ def test_search_handles_missing_fields():
 
 
 # ISBN lookup tests
-def test_get_book_by_isbn():
-    headers = get_auth_headers()
+def test_get_book_by_isbn(client):
+    headers = get_auth_headers(client)
     fake_response = {
         "title": "Dune",
         "number_of_pages": 412,
@@ -101,22 +97,22 @@ def test_get_book_by_isbn():
 
 
 # error handling tests
-def test_timeout_returns_503():
-    headers = get_auth_headers()
+def test_timeout_returns_503(client):
+    headers = get_auth_headers(client)
     with patch("httpx.get", side_effect=httpx.TimeoutException("timeout")):
         response = client.get("/api/v1/openlibrary/search?q=dune", headers=headers)
     assert response.status_code == 503
 
 
-def test_connection_error_returns_503():
-    headers = get_auth_headers()
+def test_connection_error_returns_503(client):
+    headers = get_auth_headers(client)
     with patch("httpx.get", side_effect=httpx.ConnectError("connection failed")):
         response = client.get("/api/v1/openlibrary/search?q=dune", headers=headers)
     assert response.status_code == 503
 
 
-def test_malformed_json_returns_502():
-    headers = get_auth_headers()
+def test_malformed_json_returns_502(client):
+    headers = get_auth_headers(client)
     mock = MagicMock()
     mock.raise_for_status = MagicMock()
     mock.json.side_effect = ValueError("malformed json")

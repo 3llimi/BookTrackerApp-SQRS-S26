@@ -1,11 +1,7 @@
-from fastapi.testclient import TestClient
 from uuid import uuid4
-from src.main import app
-
-client = TestClient(app)
 
 
-def get_auth_headers(email=None, password="password123"):
+def get_auth_headers(client, email=None, password="password123"):
     if email is None:
         email = f"progress-{uuid4().hex[:8]}@test.com"
 
@@ -18,7 +14,7 @@ def get_auth_headers(email=None, password="password123"):
 
 
 # helper to create a book to use in tests
-def create_test_book(headers, total_pages=300):
+def create_test_book(client, headers, total_pages=300):
     response = client.post(
         "/api/v1/books/",
         json={
@@ -31,9 +27,9 @@ def create_test_book(headers, total_pages=300):
     return response.json()["id"]
 
 
-def test_create_progress():
-    headers = get_auth_headers()
-    book_id = create_test_book(headers)
+def test_create_progress(client):
+    headers = get_auth_headers(client)
+    book_id = create_test_book(client, headers)
     response = client.post(
         f"/api/v1/books/{book_id}/progress",
         json={"status": "reading", "current_page": 50},
@@ -44,9 +40,9 @@ def test_create_progress():
     assert response.json()["current_page"] == 50
 
 
-def test_create_progress_auto_reading_when_pages_above_zero():
-    headers = get_auth_headers()
-    book_id = create_test_book(headers, total_pages=300)
+def test_create_progress_auto_reading_when_pages_above_zero(client):
+    headers = get_auth_headers(client)
+    book_id = create_test_book(client, headers, total_pages=300)
 
     response = client.post(
         f"/api/v1/books/{book_id}/progress",
@@ -59,9 +55,9 @@ def test_create_progress_auto_reading_when_pages_above_zero():
     assert response.json()["current_page"] == 1
 
 
-def test_create_progress_409_if_already_exists():
-    headers = get_auth_headers()
-    book_id = create_test_book(headers)
+def test_create_progress_409_if_already_exists(client):
+    headers = get_auth_headers(client)
+    book_id = create_test_book(client, headers)
     client.post(
         f"/api/v1/books/{book_id}/progress", json={"status": "reading"}, headers=headers
     )
@@ -73,17 +69,17 @@ def test_create_progress_409_if_already_exists():
     assert response.status_code == 409
 
 
-def test_create_progress_book_not_found():
-    headers = get_auth_headers()
+def test_create_progress_book_not_found(client):
+    headers = get_auth_headers(client)
     response = client.post(
         "/api/v1/books/9999/progress", json={"status": "reading"}, headers=headers
     )
     assert response.status_code == 404
 
 
-def test_get_progress():
-    headers = get_auth_headers()
-    book_id = create_test_book(headers)
+def test_get_progress(client):
+    headers = get_auth_headers(client)
+    book_id = create_test_book(client, headers)
     client.post(
         f"/api/v1/books/{book_id}/progress", json={"status": "reading"}, headers=headers
     )
@@ -93,16 +89,16 @@ def test_get_progress():
     assert response.json()["status"] == "reading"
 
 
-def test_get_progress_404_if_none():
-    headers = get_auth_headers()
-    book_id = create_test_book(headers)
+def test_get_progress_404_if_none(client):
+    headers = get_auth_headers(client)
+    book_id = create_test_book(client, headers)
     response = client.get(f"/api/v1/books/{book_id}/progress", headers=headers)
     assert response.status_code == 404
 
 
-def test_patch_progress_partial():
-    headers = get_auth_headers()
-    book_id = create_test_book(headers)
+def test_patch_progress_partial(client):
+    headers = get_auth_headers(client)
+    book_id = create_test_book(client, headers)
     client.post(
         f"/api/v1/books/{book_id}/progress",
         json={"status": "reading", "current_page": 50},
@@ -118,9 +114,9 @@ def test_patch_progress_partial():
     assert response.json()["status"] == "reading"  # untouched
 
 
-def test_patch_progress_pages_exceed_total():
-    headers = get_auth_headers()
-    book_id = create_test_book(headers, total_pages=200)
+def test_patch_progress_pages_exceed_total(client):
+    headers = get_auth_headers(client)
+    book_id = create_test_book(client, headers, total_pages=200)
     client.post(
         f"/api/v1/books/{book_id}/progress", json={"status": "reading"}, headers=headers
     )
@@ -133,9 +129,9 @@ def test_patch_progress_pages_exceed_total():
     assert response.status_code == 422
 
 
-def test_patch_progress_invalid_rating():
-    headers = get_auth_headers()
-    book_id = create_test_book(headers)
+def test_patch_progress_invalid_rating(client):
+    headers = get_auth_headers(client)
+    book_id = create_test_book(client, headers)
     client.post(
         f"/api/v1/books/{book_id}/progress", json={"status": "reading"}, headers=headers
     )
@@ -148,9 +144,9 @@ def test_patch_progress_invalid_rating():
     assert response.status_code == 422
 
 
-def test_auto_finish_when_pages_complete():
-    headers = get_auth_headers()
-    book_id = create_test_book(headers, total_pages=300)
+def test_auto_finish_when_pages_complete(client):
+    headers = get_auth_headers(client)
+    book_id = create_test_book(client, headers, total_pages=300)
     client.post(
         f"/api/v1/books/{book_id}/progress", json={"status": "reading"}, headers=headers
     )

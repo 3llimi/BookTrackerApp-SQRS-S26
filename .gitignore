@@ -2,7 +2,6 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
-poetry.lock
 *.db
 *.sqlite3
 .coverage

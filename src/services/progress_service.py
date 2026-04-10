@@ -2,6 +2,8 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from src.models import Progress, Book
 
+VALID_PROGRESS_STATUSES = {"not_started", "reading", "completed"}
+
 
 # helper: get book or 404
 def _get_book(db: Session, book_id: int, user_id: int) -> Book:
@@ -14,12 +16,36 @@ def _get_book(db: Session, book_id: int, user_id: int) -> Book:
 
 
 def _validate_current_page(current_page: int | None, total_pages: int | None) -> None:
-    if current_page and total_pages and current_page > total_pages:
+    if current_page is not None and current_page < 0:
+        raise HTTPException(
+            status_code=422,
+            detail="current_page must be zero or greater",
+        )
+
+    if total_pages is not None and total_pages < 0:
+        raise HTTPException(
+            status_code=422,
+            detail="total_pages must be zero or greater",
+        )
+
+    if (
+        current_page is not None
+        and total_pages is not None
+        and current_page > total_pages
+    ):
         detail = (
             f"current_page ({current_page}) cannot exceed "
             f"total_pages ({total_pages})"
         )
         raise HTTPException(status_code=422, detail=detail)
+
+
+def _validate_status(status_value: str | None) -> None:
+    if status_value is not None and status_value not in VALID_PROGRESS_STATUSES:
+        raise HTTPException(
+            status_code=422,
+            detail="Status must be one of: not_started, reading, completed",
+        )
 
 
 def _validate_rating(rating: int | None) -> None:
@@ -51,6 +77,7 @@ def create_progress(db, book_id, data, user_id):
             status_code=409, detail="Progress already exists for this book"
         )
 
+    _validate_status(data.status)
     _validate_current_page(data.current_page, book.total_pages)
     _validate_rating(data.rating)
 
@@ -89,6 +116,7 @@ def update_progress(db, book_id, data, user_id):
     updates = data.model_dump(exclude_unset=True)
 
     new_page = updates.get("current_page", progress.current_page)
+    _validate_status(updates.get("status"))
     _validate_current_page(new_page, book.total_pages)
     _validate_rating(updates.get("rating"))
 
