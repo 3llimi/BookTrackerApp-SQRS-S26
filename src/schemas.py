@@ -1,18 +1,21 @@
-from pydantic import BaseModel, ConfigDict
-from typing import Optional
+from pydantic import BaseModel, ConfigDict, Field
+from typing import Optional, Literal
 from datetime import datetime
 
 
+ProgressStatus = Literal["not_started", "reading", "completed"]
+
+
 class ProgressCreate(BaseModel):
-    status: str = "not_started"
-    current_page: Optional[int] = 0
+    status: ProgressStatus = "not_started"
+    current_page: int = Field(default=0, ge=0)
     rating: Optional[int] = None
     notes: Optional[str] = None
 
 
 class ProgressUpdate(BaseModel):
-    status: Optional[str] = None
-    current_page: Optional[int] = None
+    status: Optional[ProgressStatus] = None
+    current_page: Optional[int] = Field(default=None, ge=0)
     rating: Optional[int] = None
     notes: Optional[str] = None
 
@@ -34,7 +37,7 @@ class BookCreate(BaseModel):
     author: str
     isbn: Optional[str] = None
     genre: Optional[str] = None
-    total_pages: Optional[int] = None
+    total_pages: Optional[int] = Field(default=None, ge=0)
     cover_url: Optional[str] = None
 
 
@@ -43,7 +46,7 @@ class BookUpdate(BaseModel):
     author: Optional[str] = None
     isbn: Optional[str] = None
     genre: Optional[str] = None
-    total_pages: Optional[int] = None
+    total_pages: Optional[int] = Field(default=None, ge=0)
     cover_url: Optional[str] = None
 
 

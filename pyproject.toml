@@ -47,3 +47,8 @@ dev = [
 
 [tool.poetry]
 package-mode = false
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore:'crypt' is deprecated and slated for removal in Python 3.13:DeprecationWarning"
+]

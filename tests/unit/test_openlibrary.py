@@ -170,3 +170,48 @@ def test_upstream_http_error_raises_503(monkeypatch):
 
     assert exc.value.status_code == 503
     assert exc.value.detail == "Open Library returned an error"
+
+
+@pytest.mark.parametrize(
+    "raw_value,expected",
+    [
+        (352, 352),
+        (352.0, 352),
+        ("352 pages", 352),
+        ("xii, 352 p.", 352),
+        ("unknown", None),
+        (-1, None),
+        (True, None),
+        (None, None),
+    ],
+)
+def test_parse_total_pages_handles_supported_formats(raw_value, expected):
+    assert openlibrary_service._parse_total_pages(raw_value) == expected
+
+
+def test_get_book_by_isbn_falls_back_to_work_subjects_and_parses_pagination(monkeypatch):
+    def fake_get(url, params=None, timeout=None, follow_redirects=None):
+        if "/isbn/" in url:
+            return MockResponse(
+                json_data={
+                    "title": "Dune",
+                    "pagination": "xii, 352 p.",
+                    "covers": [12345],
+                    "works": [{"key": "/works/OL123W"}],
+                }
+            )
+        if "/works/" in url:
+            return MockResponse(
+                json_data={"subjects": [{"name": "Science Fiction"}]}
+            )
+        raise AssertionError(f"Unexpected URL requested: {url}")
+
+    monkeypatch.setattr(openlibrary_service.httpx, "get", fake_get)
+
+    result = openlibrary_service.get_book_by_isbn("9780441013593")
+
+    assert result["title"] == "Dune"
+    assert result["isbn"] == "9780441013593"
+    assert result["total_pages"] == 352
+    assert result["genre"] == "Science Fiction"
+    assert "covers.openlibrary.org" in result["cover_url"]

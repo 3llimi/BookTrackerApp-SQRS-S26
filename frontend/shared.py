@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from html import escape
+import os
 from typing import Any
 from urllib.parse import quote
 
 import httpx
 import streamlit as st
 
-API_BASE = "http://localhost:8000/api/v1"
+API_BASE = os.getenv("BOOKTRACKER_API_BASE", "http://localhost:8000/api/v1").rstrip("/")
 PAGE_TITLE = "Book Tracker"
 LOGIN_PAGE = "pages/0_login.py"
 MY_BOOKS_PAGE = "pages/1_my_books.py"

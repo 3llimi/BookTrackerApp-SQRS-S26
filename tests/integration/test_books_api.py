@@ -241,3 +241,124 @@ def test_delete_book_cascades_progress(client, db_session):
         db_session.query(Progress).filter(Progress.book_id == book_id).first()
     )
     assert progress_after_delete is None
+
+def test_books_with_invalid_token_return_401(client):
+    response = client.get(
+        "/api/v1/books/",
+        headers={"Authorization": "Bearer invalid.token.value"},
+    )
+
+    assert response.status_code == 401
+
+
+def test_update_other_users_book_returns_404(client):
+    headers_a = register_and_login(client, email="owner-update@test.com")
+    headers_b = register_and_login(client, email="intruder-update@test.com")
+
+    created = create_book(client, headers_a, title="Owner Book")
+    book_id = created.json()["id"]
+
+    response = client.put(
+        f"/api/v1/books/{book_id}",
+        json={"title": "Hacked Title"},
+        headers=headers_b,
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Book not found"
+
+
+def test_delete_other_users_book_returns_404(client):
+    headers_a = register_and_login(client, email="owner-delete@test.com")
+    headers_b = register_and_login(client, email="intruder-delete@test.com")
+
+    created = create_book(client, headers_a, title="Protected Book")
+    book_id = created.json()["id"]
+
+    response = client.delete(f"/api/v1/books/{book_id}", headers=headers_b)
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Book not found"
+
+
+def test_duplicate_isbn_is_allowed_for_different_users(client):
+    headers_a = register_and_login(client, email="isbn-a@test.com")
+    headers_b = register_and_login(client, email="isbn-b@test.com")
+
+    first = create_book(client, headers_a, isbn="shared-isbn-123", title="Alpha Copy")
+    second = create_book(client, headers_b, isbn="shared-isbn-123", title="Beta Copy")
+
+    assert first.status_code == 201
+    assert second.status_code == 201
+
+
+def test_get_book_includes_progress_percentage(client):
+    headers = register_and_login(client, email="percentage@test.com")
+    created = create_book(client, headers, title="Measured Book", total_pages=300)
+    book_id = created.json()["id"]
+
+    progress_response = client.post(
+        f"/api/v1/books/{book_id}/progress",
+        json={"status": "reading", "current_page": 150, "rating": 4},
+        headers=headers,
+    )
+    assert progress_response.status_code == 201
+
+    response = client.get(f"/api/v1/books/{book_id}", headers=headers)
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["progress"] is not None
+    assert data["progress"]["current_page"] == 150
+    assert data["progress_percentage"] == 50.0
+    
+    
+# negative total_pages on create
+def test_create_book_negative_total_pages_returns_422(client):
+    headers = register_and_login(client, email="negative-pages-create@test.com")
+
+    response = client.post(
+        "/api/v1/books/",
+        json={
+            "title": "Bad Book",
+            "author": "Bad Author",
+            "total_pages": -1,
+        },
+        headers=headers,
+    )
+
+    assert response.status_code == 422
+    
+    
+# negative total_pages on update
+def test_update_book_negative_total_pages_returns_422(client):
+    headers = register_and_login(client, email="negative-pages-update@test.com")
+    created = create_book(client, headers, title="Normal Book", total_pages=300)
+    book_id = created.json()["id"]
+
+    response = client.put(
+        f"/api/v1/books/{book_id}",
+        json={"total_pages": -5},
+        headers=headers,
+    )
+
+    assert response.status_code == 422
+    
+    
+# pagination behavior
+def test_list_books_respects_limit_and_offset(client):
+    headers = register_and_login(client, email="pagination@test.com")
+
+    create_book(client, headers, title="Book A")
+    create_book(client, headers, title="Book B")
+    create_book(client, headers, title="Book C")
+
+    response = client.get(
+        "/api/v1/books/?sort=title&order=asc&limit=1&offset=1",
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["title"] == "Book B"

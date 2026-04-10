@@ -1,4 +1,5 @@
 import httpx
+import re
 from fastapi import HTTPException
 
 SEARCH_URL = "https://openlibrary.org/search.json"
@@ -9,6 +10,52 @@ TIMEOUT = 5.0
 SEARCH_FIELDS = (
     "title,author_name,isbn,cover_i,first_publish_year,subject,number_of_pages_median"
 )
+
+
+def _parse_non_negative_int(value: object) -> int | None:
+    if isinstance(value, bool):
+        return None
+
+    if isinstance(value, int):
+        return value if value >= 0 else None
+
+    return None
+
+
+def _parse_integral_float(value: object) -> int | None:
+    if not isinstance(value, float):
+        return None
+
+    if value.is_integer() and value >= 0:
+        return int(value)
+
+    return None
+
+
+def _parse_pages_from_string(value: object) -> int | None:
+    if not isinstance(value, str):
+        return None
+
+    match = re.search(r"\d+", value.replace(",", ""))
+    if not match:
+        return None
+
+    return int(match.group(0))
+
+
+def _parse_total_pages(value: object) -> int | None:
+    if value is None:
+        return None
+
+    parsed = _parse_non_negative_int(value)
+    if parsed is not None:
+        return parsed
+
+    parsed = _parse_integral_float(value)
+    if parsed is not None:
+        return parsed
+
+    return _parse_pages_from_string(value)
 
 
 def _make_request(
@@ -111,7 +158,7 @@ def search_books(q: str) -> list:
         isbn_list = doc.get("isbn", [])
         isbn = isbn_list[0] if isbn_list else None
         genre = _extract_genre(doc.get("subject"))
-        total_pages = doc.get("number_of_pages_median")
+        total_pages = _parse_total_pages(doc.get("number_of_pages_median"))
 
         results.append(
             {
@@ -137,8 +184,10 @@ def get_book_by_isbn(isbn: str) -> dict:
     covers = data.get("covers", [])
     cover_url = COVER_URL.format(cover_i=covers[0]) if covers else None
 
-    # number_of_pages or pagination field
-    total_pages = data.get("number_of_pages") or data.get("pagination")
+    raw_total_pages = data.get("number_of_pages")
+    if raw_total_pages is None:
+        raw_total_pages = data.get("pagination")
+    total_pages = _parse_total_pages(raw_total_pages)
     genre = _extract_genre(data.get("subjects"))
 
     if not genre:

@@ -4,6 +4,8 @@ from hypothesis import HealthCheck, given, settings, strategies as st
 from src.schemas import BookCreate, ProgressCreate
 from src.services import book_service, progress_service, search_service
 from src.services.auth_service import create_user
+from fastapi import HTTPException
+
 
 
 def make_user(db_session, email=None):
@@ -197,7 +199,7 @@ def test_invalid_sort_field_raises_422(db_session):
     user = make_user(db_session)
     seed_books(db_session, user.id)
 
-    with pytest.raises(Exception) as exc:
+    with pytest.raises(HTTPException) as exc:
         search_service.search_books(db_session, user.id, sort="invalid_field")
 
     assert exc.value.status_code == 422
@@ -307,3 +309,21 @@ def test_hypothesis_non_matching_numeric_query_returns_empty_list(db_session, q)
     results = search_service.search_books(db_session, user.id, q=q)
 
     assert results == []
+    
+    
+# pagination to service-level
+def test_search_respects_limit_and_offset(db_session):
+    user = make_user(db_session)
+    seed_books(db_session, user.id)
+
+    results = search_service.search_books(
+        db_session,
+        user.id,
+        sort="title",
+        order="asc",
+        limit=2,
+        offset=1,
+    )
+
+    titles = [book.title for book in results]
+    assert titles == ["Dune", "Dune Messiah"]

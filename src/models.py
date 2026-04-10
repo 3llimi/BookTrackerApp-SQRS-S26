@@ -19,6 +19,13 @@ class User(Base):
 class Book(Base):
     __tablename__ = "books"
 
+    __table_args__ = (
+        CheckConstraint(
+            "total_pages IS NULL OR total_pages >= 0",
+            name="check_total_pages_non_negative",
+        ),
+    )
+
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, nullable=False)
     author = Column(String, nullable=False)
@@ -44,6 +51,11 @@ class Progress(Base):
 
     __table_args__ = (
         CheckConstraint("rating >= 1 AND rating <= 5", name="check_rating_range"),
+        CheckConstraint(
+            "status IN ('not_started', 'reading', 'completed')",
+            name="check_status_values",
+        ),
+        CheckConstraint("current_page >= 0", name="check_current_page_non_negative"),
     )
 
     id = Column(Integer, primary_key=True, index=True)
