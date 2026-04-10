@@ -34,13 +34,19 @@ def _sync_status_with_page(progress: Progress, total_pages: int | None) -> None:
         progress.status = "completed"
     elif current_page > 0:
         progress.status = "reading"
+    else:
+        progress.status = "not_started"
+
+
+def _get_progress_record(db: Session, book_id: int) -> Progress | None:
+    return db.query(Progress).filter(Progress.book_id == book_id).first()
 
 
 # CREATE
 def create_progress(db, book_id, data, user_id):
     book = _get_book(db, book_id, user_id)
 
-    if book.progress:
+    if _get_progress_record(db, book_id):
         raise HTTPException(
             status_code=409, detail="Progress already exists for this book"
         )
@@ -49,7 +55,8 @@ def create_progress(db, book_id, data, user_id):
     _validate_rating(data.rating)
 
     progress = Progress(**data.model_dump(), book_id=book_id)
-    _sync_status_with_page(progress, book.total_pages)
+    if "current_page" in data.model_fields_set:
+        _sync_status_with_page(progress, book.total_pages)
     db.add(progress)
     db.commit()
     db.refresh(progress)
@@ -58,20 +65,21 @@ def create_progress(db, book_id, data, user_id):
 
 # GET
 def get_progress(db: Session, book_id: int, user_id: int) -> Progress:
-    book = _get_book(db, book_id, user_id)
+    _get_book(db, book_id, user_id)
+    progress = _get_progress_record(db, book_id)
 
-    if not book.progress:
+    if not progress:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No progress record found for this book",
         )
-    return book.progress
+    return progress
 
 
 # PATCH
 def update_progress(db, book_id, data, user_id):
     book = _get_book(db, book_id, user_id)
-    progress = book.progress
+    progress = _get_progress_record(db, book_id)
 
     if not progress:
         raise HTTPException(
@@ -87,7 +95,8 @@ def update_progress(db, book_id, data, user_id):
     for field, value in updates.items():
         setattr(progress, field, value)
 
-    _sync_status_with_page(progress, book.total_pages)
+    if "current_page" in updates:
+        _sync_status_with_page(progress, book.total_pages)
 
     db.commit()
     db.refresh(progress)

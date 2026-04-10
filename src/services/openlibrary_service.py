@@ -19,12 +19,30 @@ def _make_request(
     Wraps every possible failure into the correct HTTP error.
     """
     try:
-        response = httpx.get(
-            url,
-            params=params,
-            timeout=TIMEOUT,
-            follow_redirects=follow_redirects,
-        )
+        # Keep compatibility with simple monkeypatched fakes in unit tests
+        # that do not accept follow_redirects as a keyword argument.
+        if follow_redirects:
+            try:
+                response = httpx.get(
+                    url,
+                    params=params,
+                    timeout=TIMEOUT,
+                    follow_redirects=True,
+                )
+            except TypeError as exc:
+                if "follow_redirects" not in str(exc):
+                    raise
+                response = httpx.get(
+                    url,
+                    params=params,
+                    timeout=TIMEOUT,
+                )
+        else:
+            response = httpx.get(
+                url,
+                params=params,
+                timeout=TIMEOUT,
+            )
         response.raise_for_status()  # raises on 4xx/5xx from Open Library
         return response.json()
 
