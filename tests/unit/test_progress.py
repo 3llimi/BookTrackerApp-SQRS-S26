@@ -1,6 +1,7 @@
 import pytest
 from uuid import uuid4
 from fastapi import HTTPException
+from pydantic import ValidationError
 
 from src.schemas import BookCreate, ProgressCreate, ProgressUpdate
 from src.services import book_service, progress_service
@@ -270,3 +271,24 @@ def test_update_progress_without_record_raises_404(db_session):
 
     assert exc.value.status_code == 404
     assert exc.value.detail == "No progress record found for this book"
+
+
+def test_create_progress_invalid_status_fails_schema_validation():
+    with pytest.raises(ValidationError) as exc:
+        ProgressCreate(status="paused", current_page=10)
+
+    assert "Input should be 'not_started', 'reading' or 'completed'" in str(exc.value)
+
+
+def test_create_progress_negative_current_page_fails_schema_validation():
+    with pytest.raises(ValidationError) as exc:
+        ProgressCreate(status="reading", current_page=-1)
+
+    assert "greater than or equal to 0" in str(exc.value)
+
+
+def test_update_progress_invalid_status_fails_schema_validation():
+    with pytest.raises(ValidationError) as exc:
+        ProgressUpdate(status="paused")
+
+    assert "Input should be 'not_started', 'reading' or 'completed'" in str(exc.value)

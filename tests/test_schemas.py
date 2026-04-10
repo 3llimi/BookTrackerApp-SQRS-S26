@@ -1,6 +1,9 @@
-import pytest
-from src.schemas import BookCreate, BookUpdate, BookOut, ProgressCreate, ProgressOut
 from datetime import datetime
+
+import pytest
+from pydantic import ValidationError
+
+from src.schemas import BookCreate, BookUpdate, BookOut, ProgressCreate, ProgressOut
 
 # ── BookCreate ────────────────────────────────────────────────
 
@@ -13,7 +16,7 @@ def test_book_create_valid():
 
 
 def test_book_create_missing_required_fields():
-    with pytest.raises(Exception):  # title and author are required
+    with pytest.raises(ValidationError):  # title and author are required
         BookCreate(title="Dune")  # missing author → should fail
 
 
@@ -87,3 +90,23 @@ def test_book_out_with_nested_progress():
     assert book.title == "Dune"
     assert book.progress.status == "completed"
     assert book.progress.rating == 5
+
+
+def test_book_create_negative_total_pages_fails():
+    with pytest.raises(ValidationError):
+        BookCreate(title="Dune", author="Frank Herbert", total_pages=-1)
+
+
+def test_book_update_negative_total_pages_fails():
+    with pytest.raises(ValidationError):
+        BookUpdate(total_pages=-1)
+
+
+def test_progress_create_negative_current_page_fails():
+    with pytest.raises(ValidationError):
+        ProgressCreate(status="reading", current_page=-1)
+
+
+def test_progress_create_invalid_status_fails():
+    with pytest.raises(ValidationError):
+        ProgressCreate(status="paused", current_page=10)

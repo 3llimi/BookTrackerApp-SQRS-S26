@@ -276,3 +276,160 @@ def test_nested_progress_visible_in_get_book(client):
     assert data["progress"]["status"] == "reading"
     assert data["progress"]["current_page"] == 80
     assert data["progress"]["rating"] == 5
+    
+    
+def test_create_progress_auto_reading_when_current_page_above_zero(client):
+    headers = register_and_login(client, email="progress-auto-reading@test.com")
+    book_id = create_book(client, headers, total_pages=300)
+
+    response = client.post(
+        f"/api/v1/books/{book_id}/progress",
+        json={"status": "not_started", "current_page": 1},
+        headers=headers,
+    )
+
+    assert response.status_code == 201
+    assert response.json()["status"] == "reading"
+    assert response.json()["current_page"] == 1
+
+
+def test_create_progress_auto_completed_when_current_page_equals_total_pages(client):
+    headers = register_and_login(client, email="progress-auto-completed@test.com")
+    book_id = create_book(client, headers, total_pages=300)
+
+    response = client.post(
+        f"/api/v1/books/{book_id}/progress",
+        json={"status": "reading", "current_page": 300},
+        headers=headers,
+    )
+
+    assert response.status_code == 201
+    assert response.json()["status"] == "completed"
+    assert response.json()["current_page"] == 300
+
+
+def test_create_progress_invalid_status_returns_422(client):
+    headers = register_and_login(client, email="progress-invalid-status@test.com")
+    book_id = create_book(client, headers)
+
+    response = client.post(
+        f"/api/v1/books/{book_id}/progress",
+        json={"status": "paused", "current_page": 10},
+        headers=headers,
+    )
+
+    assert response.status_code == 422
+
+
+def test_create_progress_negative_current_page_returns_422(client):
+    headers = register_and_login(client, email="progress-negative-page@test.com")
+    book_id = create_book(client, headers)
+
+    response = client.post(
+        f"/api/v1/books/{book_id}/progress",
+        json={"status": "reading", "current_page": -1},
+        headers=headers,
+    )
+
+    assert response.status_code == 422
+
+
+def test_get_other_users_progress_returns_404(client):
+    headers_a = register_and_login(client, email="progress-owner@test.com")
+    headers_b = register_and_login(client, email="progress-intruder@test.com")
+
+    book_id = create_book(client, headers_a, total_pages=300)
+
+    create_response = client.post(
+        f"/api/v1/books/{book_id}/progress",
+        json={"status": "reading", "current_page": 50},
+        headers=headers_a,
+    )
+    assert create_response.status_code == 201
+
+    response = client.get(f"/api/v1/books/{book_id}/progress", headers=headers_b)
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Book not found"
+
+
+def test_patch_other_users_progress_returns_404(client):
+    headers_a = register_and_login(client, email="progress-owner-patch@test.com")
+    headers_b = register_and_login(client, email="progress-intruder-patch@test.com")
+
+    book_id = create_book(client, headers_a, total_pages=300)
+
+    create_response = client.post(
+        f"/api/v1/books/{book_id}/progress",
+        json={"status": "reading", "current_page": 50},
+        headers=headers_a,
+    )
+    assert create_response.status_code == 201
+
+    response = client.patch(
+        f"/api/v1/books/{book_id}/progress",
+        json={"current_page": 100},
+        headers=headers_b,
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Book not found"
+
+
+# invalid status on patch
+def test_patch_progress_invalid_status_returns_422(client):
+    headers = register_and_login(client, email="progress-invalid-status-patch@test.com")
+    book_id = create_book(client, headers)
+
+    create_response = client.post(
+        f"/api/v1/books/{book_id}/progress",
+        json={"status": "reading", "current_page": 50},
+        headers=headers,
+    )
+    assert create_response.status_code == 201
+
+    response = client.patch(
+        f"/api/v1/books/{book_id}/progress",
+        json={"status": "paused"},
+        headers=headers,
+    )
+
+    assert response.status_code == 422
+    
+    
+# negative current_page on patch
+def test_patch_progress_negative_current_page_returns_422(client):
+    headers = register_and_login(client, email="progress-negative-patch@test.com")
+    book_id = create_book(client, headers)
+
+    create_response = client.post(
+        f"/api/v1/books/{book_id}/progress",
+        json={"status": "reading", "current_page": 50},
+        headers=headers,
+    )
+    assert create_response.status_code == 201
+
+    response = client.patch(
+        f"/api/v1/books/{book_id}/progress",
+        json={"current_page": -1},
+        headers=headers,
+    )
+
+    assert response.status_code == 422
+    
+    
+# create progress on other user’s book
+def test_create_progress_on_other_users_book_returns_404(client):
+    headers_a = register_and_login(client, email="progress-create-owner@test.com")
+    headers_b = register_and_login(client, email="progress-create-intruder@test.com")
+
+    book_id = create_book(client, headers_a, total_pages=300)
+
+    response = client.post(
+        f"/api/v1/books/{book_id}/progress",
+        json={"status": "reading", "current_page": 20},
+        headers=headers_b,
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Book not found"

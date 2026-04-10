@@ -104,3 +104,21 @@ def test_login_invalid_credentials_returns_401(client):
 
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid email or password"
+
+
+def test_register_missing_email_returns_422(client):
+    response = client.post(
+        "/api/v1/auth/register",
+        json={"password": "password123"},
+    )
+
+    assert response.status_code == 422
+
+
+def test_register_missing_password_returns_422(client):
+    response = client.post(
+        "/api/v1/auth/register",
+        json={"email": _unique_email("missing-password")},
+    )
+
+    assert response.status_code == 422

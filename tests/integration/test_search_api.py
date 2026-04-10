@@ -188,3 +188,45 @@ def test_sql_injection_like_input_returns_zero_results(client):
 
     assert response.status_code == 200
     assert response.json() == []
+
+
+# case-insensitive genre
+def test_filter_by_genre_is_case_insensitive(client):
+    headers = register_and_login(client)
+    seed_books(client, headers)
+
+    response = client.get("/api/v1/books?genre=fantasy", headers=headers)
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["title"] == "The Hobbit"
+    
+    
+# user scoping
+def test_search_is_scoped_to_current_user(client):
+    headers_a = register_and_login(client, email="search-owner@test.com")
+    headers_b = register_and_login(client, email="search-other@test.com")
+
+    seed_books(client, headers_a)
+    create_book(client, headers_b, "Private Book", "Secret Author", "Hidden", 100)
+
+    response = client.get("/api/v1/books?title=private", headers=headers_a)
+
+    assert response.status_code == 200
+    assert response.json() == []
+    
+    
+# pagination on filtered results
+def test_search_respects_limit_and_offset(client):
+    headers = register_and_login(client)
+    seed_books(client, headers)
+
+    response = client.get(
+        "/api/v1/books?sort=title&order=asc&limit=2&offset=1",
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    titles = [book["title"] for book in response.json()]
+    assert titles == ["Dune", "Dune Messiah"]
