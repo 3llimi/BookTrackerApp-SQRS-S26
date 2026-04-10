@@ -6,10 +6,14 @@ ISBN_URL = "https://openlibrary.org/isbn/{isbn}.json"
 WORK_URL = "https://openlibrary.org{work_key}.json"
 COVER_URL = "https://covers.openlibrary.org/b/id/{cover_i}-M.jpg"
 TIMEOUT = 5.0
-SEARCH_FIELDS = "title,author_name,isbn,cover_i,first_publish_year,subject,number_of_pages_median"
+SEARCH_FIELDS = (
+    "title,author_name,isbn,cover_i,first_publish_year,subject,number_of_pages_median"
+)
 
 
-def _make_request(url: str, params: dict = None, *, follow_redirects: bool = False) -> dict:
+def _make_request(
+    url: str, params: dict = None, *, follow_redirects: bool = False
+) -> dict:
     """
     Single helper for all external HTTP calls.
     Wraps every possible failure into the correct HTTP error.
@@ -123,7 +127,9 @@ def get_book_by_isbn(isbn: str) -> dict:
         work_key = _extract_first_work_key(data.get("works"))
         if work_key:
             try:
-                work_data = _make_request(WORK_URL.format(work_key=work_key), follow_redirects=True)
+                work_data = _make_request(
+                    WORK_URL.format(work_key=work_key), follow_redirects=True
+                )
                 genre = _extract_genre(work_data.get("subjects"))
             except HTTPException:
                 # keep original response if work lookup fails

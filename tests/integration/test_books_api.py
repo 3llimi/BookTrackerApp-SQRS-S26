@@ -4,7 +4,6 @@ import pytest
 
 from src.models import Progress
 
-
 BOOK_RESPONSE_FIELDS = {
     "id",
     "title",
@@ -230,11 +229,15 @@ def test_delete_book_cascades_progress(client, db_session):
     )
     assert progress_response.status_code == 201
 
-    progress_in_db = db_session.query(Progress).filter(Progress.book_id == book_id).first()
+    progress_in_db = (
+        db_session.query(Progress).filter(Progress.book_id == book_id).first()
+    )
     assert progress_in_db is not None
 
     delete_response = client.delete(f"/api/v1/books/{book_id}", headers=headers)
     assert delete_response.status_code == 204
 
-    progress_after_delete = db_session.query(Progress).filter(Progress.book_id == book_id).first()
+    progress_after_delete = (
+        db_session.query(Progress).filter(Progress.book_id == book_id).first()
+    )
     assert progress_after_delete is None

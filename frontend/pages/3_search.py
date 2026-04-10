@@ -5,9 +5,9 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-import streamlit as st
+import streamlit as st  # noqa: E402
 
-from shared import (
+from shared import (  # noqa: E402
     ADD_BOOK_PAGE,
     PROGRESS_PAGE,
     api_request,
@@ -45,7 +45,10 @@ require_auth()
 render_sidebar("pages/3_search.py")
 render_hero(
     "Search Your Collection",
-    "Search by title or author, refine with focused filters, and jump directly to edit or progress tracking.",
+    (
+        "Search by title or author, refine with focused filters, and jump "
+        "directly to edit or progress tracking."
+    ),
     kicker="Search & Filter",
 )
 
@@ -61,8 +64,12 @@ except RuntimeError as exc:
     st.error(str(exc))
     st.stop()
 
-genre_options = ["All"] + sorted({book.get("genre") for book in all_books if book.get("genre")})
-author_options = ["All"] + sorted({book.get("author") for book in all_books if book.get("author")})
+genre_options = ["All"] + sorted(
+    {book.get("genre") for book in all_books if book.get("genre")}
+)
+author_options = ["All"] + sorted(
+    {book.get("author") for book in all_books if book.get("author")}
+)
 status_options = ["All", "Want to Read", "Reading", "Finished"]
 
 defaults = {
@@ -119,7 +126,11 @@ selected_sort_order = st.session_state["search_sort_order"]
 
 params = {
     "limit": 200,
-    "sort": "created_at" if selected_sort_field == "Pages Read" else SORT_FIELD_MAP[selected_sort_field],
+    "sort": (
+        "created_at"
+        if selected_sort_field == "Pages Read"
+        else SORT_FIELD_MAP[selected_sort_field]
+    ),
     "order": "asc" if selected_sort_order == "Ascending" else "desc",
 }
 
@@ -161,12 +172,19 @@ st.caption(f"{result_count} result{'s' if result_count != 1 else ''}")
 if compact_layout:
     summary_col_1, summary_col_2 = st.columns(2)
     summary_col_1.metric("Results", result_count)
-    summary_col_2.metric("Reading", sum(1 for book in results if get_book_status(book) == "reading"))
-    st.metric("Rated", sum(1 for book in results if get_progress_value(book, "rating") is not None))
+    summary_col_2.metric(
+        "Reading", sum(1 for book in results if get_book_status(book) == "reading")
+    )
+    st.metric(
+        "Rated",
+        sum(1 for book in results if get_progress_value(book, "rating") is not None),
+    )
 else:
     summary_col_1, summary_col_2, summary_col_3 = st.columns(3)
     summary_col_1.metric("Results", result_count)
-    summary_col_2.metric("Reading", sum(1 for book in results if get_book_status(book) == "reading"))
+    summary_col_2.metric(
+        "Reading", sum(1 for book in results if get_book_status(book) == "reading")
+    )
     summary_col_3.metric(
         "Rated",
         sum(1 for book in results if get_progress_value(book, "rating") is not None),
@@ -187,7 +205,12 @@ for book in results:
     with st.container(border=True):
         if compact_layout:
             st.markdown(f"**{book['title']}**")
-            st.caption(f"{book['author']} | {book.get('genre') or 'No Genre'} | {format_rating(rating)}")
+            st.caption(
+                (
+                    f"{book['author']} | {book.get('genre') or 'No Genre'} | "
+                    f"{format_rating(rating)}"
+                )
+            )
             if total_pages > 0:
                 st.progress(min(current_page / total_pages, 1.0))
                 st.caption(f"{current_page} / {total_pages} pages")
@@ -199,16 +222,28 @@ for book in results:
                 render_status_chip(status)
                 st.caption(get_status_badge(status))
             with action_col_2:
-                if st.button("Track", key=f"search_track_{book['id']}", width="stretch", type="primary"):
+                if st.button(
+                    "Track",
+                    key=f"search_track_{book['id']}",
+                    width="stretch",
+                    type="primary",
+                ):
                     st.session_state["selected_book_id"] = book["id"]
                     go_to_page(PROGRESS_PAGE)
             with action_col_3:
-                render_quick_book_panel_trigger(book, key_prefix=f"search_{book['id']}", label="Details")
+                render_quick_book_panel_trigger(
+                    book, key_prefix=f"search_{book['id']}", label="Details"
+                )
         else:
             content_col, action_col = st.columns([4.0, 1.5])
             with content_col:
                 st.markdown(f"**{book['title']}**")
-                st.caption(f"{book['author']} | {book.get('genre') or 'No Genre'} | {format_rating(rating)}")
+                st.caption(
+                    (
+                        f"{book['author']} | {book.get('genre') or 'No Genre'} | "
+                        f"{format_rating(rating)}"
+                    )
+                )
                 if total_pages > 0:
                     st.progress(min(current_page / total_pages, 1.0))
                     st.caption(f"{current_page} / {total_pages} pages")
@@ -217,12 +252,24 @@ for book in results:
             with action_col:
                 render_status_chip(status)
                 st.caption(get_status_badge(status))
-                if st.button("Track", key=f"search_track_{book['id']}", width="stretch", type="primary"):
+                if st.button(
+                    "Track",
+                    key=f"search_track_{book['id']}",
+                    width="stretch",
+                    type="primary",
+                ):
                     st.session_state["selected_book_id"] = book["id"]
                     go_to_page(PROGRESS_PAGE)
-                if st.button("Edit", key=f"search_edit_{book['id']}", width="stretch", type="secondary"):
+                if st.button(
+                    "Edit",
+                    key=f"search_edit_{book['id']}",
+                    width="stretch",
+                    type="secondary",
+                ):
                     st.session_state["book_id"] = book["id"]
                     st.session_state["editing_book_id"] = book["id"]
                     st.session_state["book_form_loaded_id"] = None
                     go_to_page(ADD_BOOK_PAGE)
-                render_quick_book_panel_trigger(book, key_prefix=f"search_{book['id']}", label="Details")
+                render_quick_book_panel_trigger(
+                    book, key_prefix=f"search_{book['id']}", label="Details"
+                )

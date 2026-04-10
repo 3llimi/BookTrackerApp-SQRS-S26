@@ -251,7 +251,7 @@ def test_search_is_scoped_to_current_user(db_session):
     results = search_service.search_books(db_session, user_a.id, q="private")
 
     assert results == []
-    
+
 
 def ensure_hypothesis_seeded_user(db_session):
     from src.models import Book, User

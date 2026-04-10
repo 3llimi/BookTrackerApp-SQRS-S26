@@ -53,7 +53,10 @@ SORT_OPTIONS = {
 
 THEME_PALETTES = {
     "dark": {
-        "bg": "radial-gradient(circle at 85% 0%, #1e3532 0%, rgba(30, 53, 50, 0.25) 28%), linear-gradient(180deg, #121518 0%, #0f1b20 48%, #172126 100%)",
+        "bg": (
+            "radial-gradient(circle at 85% 0%, #1e3532 0%, rgba(30, 53, 50, 0.25) "
+            "28%), linear-gradient(180deg, #121518 0%, #0f1b20 48%, #172126 100%)"
+        ),
         "card": "rgba(24, 31, 36, 0.92)",
         "card_border": "#36434f",
         "ink": "#e8e4d7",
@@ -67,6 +70,11 @@ THEME_PALETTES = {
     },
 }
 
+GOOGLE_FONTS_URL = (
+    "https://fonts.googleapis.com/css2?family=Fraunces:wght@500;700&family="
+    "Manrope:wght@400;500;600;700&display=swap"
+)
+
 
 def build_global_style(motion_enabled: bool) -> str:
     palette = THEME_PALETTES["dark"]
@@ -76,7 +84,7 @@ def build_global_style(motion_enabled: bool) -> str:
 
     return f"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500;700&family=Manrope:wght@400;500;600;700&display=swap');
+@import url('{GOOGLE_FONTS_URL}');
 
 :root {{
     --bt-bg: {palette['bg']};
@@ -275,6 +283,7 @@ div[data-testid="stSidebar"] span {{
 </style>
 """
 
+
 STATUS_CHIP_CLASS = {
     "not_started": "bt-chip-want",
     "reading": "bt-chip-reading",
@@ -282,6 +291,7 @@ STATUS_CHIP_CLASS = {
 }
 
 LAYOUT_DENSITY_OPTIONS = ["Adaptive", "Comfort", "Compact"]
+
 
 def configure_page(page_name: str) -> None:
     st.set_page_config(page_title=PAGE_TITLE, page_icon="📚", layout="wide")
@@ -322,7 +332,9 @@ def render_sidebar(current_page: str, show_logout: bool = True) -> None:
         st.title("Book Tracker")
         st.caption("Your Reading Companion")
         st.markdown("Track every chapter, one page at a time.")
-        st.caption("Organize your library, log reading progress, and keep notes in one place.")
+        st.caption(
+            "Organize your library, log reading progress, and keep notes in one place."
+        )
         st.divider()
 
         if st.session_state.get("token"):
@@ -450,10 +462,13 @@ def api_request(
             timeout=timeout,
         )
     except httpx.TimeoutException as exc:
-        raise RuntimeError("The API is taking too long to respond. Please try again.") from exc
+        raise RuntimeError(
+            "The API is taking too long to respond. Please try again."
+        ) from exc
     except httpx.HTTPError as exc:
         raise RuntimeError(
-            "Could not reach the API. Make sure the backend is running on localhost:8000."
+            "Could not reach the API. Make sure the backend is running on "
+            "localhost:8000."
         ) from exc
 
     if response.status_code == 401 and auth_required:
@@ -489,7 +504,12 @@ def cover_image_source(title: str, cover_url: str | None = None) -> str:
 
     short_title = escape((title or "Book")[:40])
     svg = f"""
-    <svg xmlns="http://www.w3.org/2000/svg" width="420" height="620" viewBox="0 0 420 620">
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="420"
+        height="620"
+        viewBox="0 0 420 620"
+    >
         <defs>
             <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stop-color="#143642"/>
@@ -498,9 +518,34 @@ def cover_image_source(title: str, cover_url: str | None = None) -> str:
             </linearGradient>
         </defs>
         <rect width="420" height="620" rx="36" fill="url(#bg)"/>
-        <rect x="36" y="36" width="348" height="548" rx="28" fill="rgba(255,255,255,0.12)"/>
-        <text x="210" y="240" text-anchor="middle" font-family="Georgia, serif" font-size="34" fill="#fff6ea">Book Tracker</text>
-        <text x="210" y="305" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="22" fill="#f7f1e7">{short_title}</text>
+        <rect
+            x="36"
+            y="36"
+            width="348"
+            height="548"
+            rx="28"
+            fill="rgba(255,255,255,0.12)"
+        />
+        <text
+            x="210"
+            y="240"
+            text-anchor="middle"
+            font-family="Georgia, serif"
+            font-size="34"
+            fill="#fff6ea"
+        >
+            Book Tracker
+        </text>
+        <text
+            x="210"
+            y="305"
+            text-anchor="middle"
+            font-family="Segoe UI, sans-serif"
+            font-size="22"
+            fill="#f7f1e7"
+        >
+            {short_title}
+        </text>
     </svg>
     """
     return f"data:image/svg+xml;utf8,{quote(svg)}"
@@ -549,7 +594,9 @@ def _normalize_quick_isbn(raw_isbn: str) -> str | None:
     compact = "".join(char for char in cleaned if char not in {"-", " "}).upper()
     if len(compact) not in {10, 13}:
         raise ValueError("ISBN must be 10 or 13 characters.")
-    if len(compact) == 10 and not (compact[:-1].isdigit() and (compact[-1].isdigit() or compact[-1] == "X")):
+    if len(compact) == 10 and not (
+        compact[:-1].isdigit() and (compact[-1].isdigit() or compact[-1] == "X")
+    ):
         raise ValueError("ISBN-10 must contain 9 digits and a final digit or X.")
     if len(compact) == 13 and not compact.isdigit():
         raise ValueError("ISBN-13 must contain only digits.")
@@ -560,15 +607,30 @@ def render_quick_book_panel(book: dict[str, Any], key_prefix: str) -> None:
     st.markdown(f"#### {escape(str(book.get('title') or 'Untitled'))}")
     st.caption(f"{book.get('author') or 'Unknown author'}")
     render_status_chip(get_book_status(book))
-    st.markdown('<p class="bt-panel-note">Quick edit without leaving this page.</p>', unsafe_allow_html=True)
+    st.markdown(
+        '<p class="bt-panel-note">Quick edit without leaving this page.</p>',
+        unsafe_allow_html=True,
+    )
 
-    default_total_pages = "" if book.get("total_pages") is None else str(book.get("total_pages"))
+    default_total_pages = (
+        "" if book.get("total_pages") is None else str(book.get("total_pages"))
+    )
 
     with st.form(f"{key_prefix}_quick_edit_form", clear_on_submit=False):
-        quick_title = st.text_input("Title", value=str(book.get("title") or ""), key=f"{key_prefix}_quick_title")
-        quick_author = st.text_input("Author", value=str(book.get("author") or ""), key=f"{key_prefix}_quick_author")
-        quick_isbn = st.text_input("ISBN", value=str(book.get("isbn") or ""), key=f"{key_prefix}_quick_isbn")
-        quick_genre = st.text_input("Genre", value=str(book.get("genre") or ""), key=f"{key_prefix}_quick_genre")
+        quick_title = st.text_input(
+            "Title", value=str(book.get("title") or ""), key=f"{key_prefix}_quick_title"
+        )
+        quick_author = st.text_input(
+            "Author",
+            value=str(book.get("author") or ""),
+            key=f"{key_prefix}_quick_author",
+        )
+        quick_isbn = st.text_input(
+            "ISBN", value=str(book.get("isbn") or ""), key=f"{key_prefix}_quick_isbn"
+        )
+        quick_genre = st.text_input(
+            "Genre", value=str(book.get("genre") or ""), key=f"{key_prefix}_quick_genre"
+        )
         quick_total_pages = st.text_input(
             "Total Pages",
             value=default_total_pages,
@@ -579,7 +641,9 @@ def render_quick_book_panel(book: dict[str, Any], key_prefix: str) -> None:
             value=str(book.get("cover_url") or ""),
             key=f"{key_prefix}_quick_cover_url",
         )
-        save_quick_edit = st.form_submit_button("Save Quick Edit", width="stretch", type="primary")
+        save_quick_edit = st.form_submit_button(
+            "Save Quick Edit", width="stretch", type="primary"
+        )
 
     if save_quick_edit:
         try:
@@ -613,12 +677,16 @@ def render_quick_book_panel(book: dict[str, Any], key_prefix: str) -> None:
             st.session_state["book_form_loaded_id"] = None
             go_to_page(ADD_BOOK_PAGE)
     with action_col_2:
-        if st.button("Track", key=f"{key_prefix}_track", width="stretch", type="secondary"):
+        if st.button(
+            "Track", key=f"{key_prefix}_track", width="stretch", type="secondary"
+        ):
             st.session_state["selected_book_id"] = book["id"]
             go_to_page(PROGRESS_PAGE)
 
 
-def render_quick_book_panel_trigger(book: dict[str, Any], key_prefix: str, label: str = "Details") -> None:
+def render_quick_book_panel_trigger(
+    book: dict[str, Any], key_prefix: str, label: str = "Details"
+) -> None:
     if hasattr(st, "popover"):
         with st.popover(label):
             render_quick_book_panel(book, key_prefix)
@@ -628,7 +696,4 @@ def render_quick_book_panel_trigger(book: dict[str, Any], key_prefix: str, label
 
 
 def build_book_options(books: list[dict[str, Any]]) -> list[tuple[str, int]]:
-    return [
-        (f"{book['title']} by {book['author']}", int(book["id"]))
-        for book in books
-    ]
+    return [(f"{book['title']} by {book['author']}", int(book["id"])) for book in books]

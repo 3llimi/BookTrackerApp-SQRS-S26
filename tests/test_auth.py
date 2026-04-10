@@ -1,6 +1,5 @@
 from src.services.auth_service import create_jwt_token
 from jose import jwt
-import os
 
 
 def test_jwt_token_contains_email():

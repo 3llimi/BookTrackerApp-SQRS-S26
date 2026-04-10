@@ -5,9 +5,9 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-import streamlit as st
+import streamlit as st  # noqa: E402
 
-from shared import (
+from shared import (  # noqa: E402
     ADD_BOOK_PAGE,
     PROGRESS_PAGE,
     api_request,
@@ -45,7 +45,10 @@ require_auth()
 render_sidebar("pages/1_my_books.py")
 render_hero(
     "My Books",
-    "Browse your collection, update details quickly, and keep your reading progress moving.",
+    (
+        "Browse your collection, update details quickly, and keep your reading "
+        "progress moving."
+    ),
     kicker="Your Library",
 )
 
@@ -136,7 +139,9 @@ if compact_layout:
             list(BOOK_SORT_OPTIONS.keys()),
             key="my_books_sort",
         )
-    if st.button("Clear", key="my_books_clear_filters", width="stretch", type="secondary"):
+    if st.button(
+        "Clear", key="my_books_clear_filters", width="stretch", type="secondary"
+    ):
         st.session_state["my_books_query"] = ""
         st.session_state["my_books_status_filter"] = "All"
         st.session_state["my_books_sort"] = "Rating (High to Low)"
@@ -144,7 +149,9 @@ if compact_layout:
 else:
     if st.session_state.get("my_books_sort") not in BOOK_SORT_OPTIONS:
         st.session_state["my_books_sort"] = "Rating (High to Low)"
-    filter_col_1, filter_col_2, filter_col_3, filter_col_4 = st.columns([2.0, 1.0, 1.2, 0.8])
+    filter_col_1, filter_col_2, filter_col_3, filter_col_4 = st.columns(
+        [2.0, 1.0, 1.2, 0.8]
+    )
     with filter_col_1:
         query = st.text_input(
             "Find a Book",
@@ -165,7 +172,9 @@ else:
         )
     with filter_col_4:
         st.write("")
-        if st.button("Clear", key="my_books_clear_filters", width="stretch", type="secondary"):
+        if st.button(
+            "Clear", key="my_books_clear_filters", width="stretch", type="secondary"
+        ):
             st.session_state["my_books_query"] = ""
             st.session_state["my_books_status_filter"] = "All"
             st.session_state["my_books_sort"] = "Rating (High to Low)"
@@ -224,7 +233,12 @@ for row_start in range(0, len(filtered_books), cards_per_row):
                 st.subheader(book["title"])
                 st.caption(book["author"])
                 genre = book.get("genre") or "No Genre"
-                st.caption(f"{genre} | {format_rating(int(get_progress_value(book, 'rating') or 0))}")
+                st.caption(
+                    (
+                        f"{genre} | "
+                        f"{format_rating(int(get_progress_value(book, 'rating') or 0))}"
+                    )
+                )
                 render_status_chip(status)
 
                 if total_pages:
@@ -244,13 +258,17 @@ for row_start in range(0, len(filtered_books), cards_per_row):
                         st.session_state["book_form_loaded_id"] = None
                         go_to_page(ADD_BOOK_PAGE)
                 with top_action_col_2:
-                    if st.button("Progress", key=f"progress_{book['id']}", width="stretch"):
+                    if st.button(
+                        "Progress", key=f"progress_{book['id']}", width="stretch"
+                    ):
                         st.session_state["selected_book_id"] = book["id"]
                         go_to_page(PROGRESS_PAGE)
 
                 bottom_action_col_1, bottom_action_col_2 = st.columns(2)
                 with bottom_action_col_1:
-                    render_quick_book_panel_trigger(book, key_prefix=f"my_books_{book['id']}", label="Details")
+                    render_quick_book_panel_trigger(
+                        book, key_prefix=f"my_books_{book['id']}", label="Details"
+                    )
                 delete_column = bottom_action_col_2
 
                 with delete_column:
@@ -258,14 +276,28 @@ for row_start in range(0, len(filtered_books), cards_per_row):
                         st.warning("Delete this book?")
                         confirm_col, cancel_col = st.columns(2)
                         with confirm_col:
-                            if st.button("Confirm", key=f"confirm_delete_{book['id']}", width="stretch"):
+                            if st.button(
+                                "Confirm",
+                                key=f"confirm_delete_{book['id']}",
+                                width="stretch",
+                            ):
                                 try:
-                                    api_request("DELETE", f"/books/{book['id']}", expect_json=False)
+                                    api_request(
+                                        "DELETE",
+                                        f"/books/{book['id']}",
+                                        expect_json=False,
+                                    )
                                     if st.session_state.get("book_id") == book["id"]:
                                         st.session_state["book_id"] = None
-                                    if st.session_state.get("editing_book_id") == book["id"]:
+                                    if (
+                                        st.session_state.get("editing_book_id")
+                                        == book["id"]
+                                    ):
                                         st.session_state["editing_book_id"] = None
-                                    if st.session_state.get("selected_book_id") == book["id"]:
+                                    if (
+                                        st.session_state.get("selected_book_id")
+                                        == book["id"]
+                                    ):
                                         st.session_state["selected_book_id"] = None
                                     st.session_state["pending_delete_book_id"] = None
                                     st.toast(f"Deleted '{book['title']}'.")
@@ -273,9 +305,19 @@ for row_start in range(0, len(filtered_books), cards_per_row):
                                 except RuntimeError as exc:
                                     st.error(str(exc))
                         with cancel_col:
-                            if st.button("Cancel", key=f"cancel_delete_{book['id']}", width="stretch", type="secondary"):
+                            if st.button(
+                                "Cancel",
+                                key=f"cancel_delete_{book['id']}",
+                                width="stretch",
+                                type="secondary",
+                            ):
                                 st.session_state["pending_delete_book_id"] = None
                                 st.rerun()
-                    elif st.button("Delete", key=f"delete_{book['id']}", width="stretch", type="secondary"):
+                    elif st.button(
+                        "Delete",
+                        key=f"delete_{book['id']}",
+                        width="stretch",
+                        type="secondary",
+                    ):
                         st.session_state["pending_delete_book_id"] = book["id"]
                         st.rerun()

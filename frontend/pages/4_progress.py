@@ -5,9 +5,9 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-import streamlit as st
+import streamlit as st  # noqa: E402
 
-from shared import (
+from shared import (  # noqa: E402
     API_TO_UI_STATUS,
     UI_TO_API_STATUS,
     api_request,
@@ -25,12 +25,20 @@ from shared import (
 )
 
 
-def sync_progress_state(book_id: int, total_pages: int, progress: dict[str, object]) -> None:
+def sync_progress_state(
+    book_id: int, total_pages: int, progress: dict[str, object]
+) -> None:
     raw_current_page = int(progress.get("current_page") or 0)
-    current_page = min(raw_current_page, total_pages) if total_pages > 0 else max(raw_current_page, 0)
+    current_page = (
+        min(raw_current_page, total_pages)
+        if total_pages > 0
+        else max(raw_current_page, 0)
+    )
 
     st.session_state["progress_loaded_book_id"] = book_id
-    st.session_state["progress_status_ui"] = API_TO_UI_STATUS.get(progress.get("status", "not_started"), "want_to_read")
+    st.session_state["progress_status_ui"] = API_TO_UI_STATUS.get(
+        progress.get("status", "not_started"), "want_to_read"
+    )
     st.session_state["progress_current_page"] = current_page
     st.session_state["progress_current_page_free"] = current_page
     st.session_state["progress_rating"] = int(progress.get("rating") or 0)
@@ -70,7 +78,9 @@ def restore_progress_snapshot(snapshot: dict[str, object] | None) -> None:
         return
     st.session_state["progress_status_ui"] = snapshot.get("status_ui", "want_to_read")
     st.session_state["progress_current_page"] = int(snapshot.get("current_page") or 0)
-    st.session_state["progress_current_page_free"] = int(snapshot.get("current_page") or 0)
+    st.session_state["progress_current_page_free"] = int(
+        snapshot.get("current_page") or 0
+    )
     st.session_state["progress_rating"] = int(snapshot.get("rating") or 0)
     st.session_state["progress_notes"] = snapshot.get("notes") or ""
 
@@ -80,7 +90,10 @@ require_auth()
 render_sidebar("pages/4_progress.py")
 render_hero(
     "Reading Progress",
-    "Choose a book, update pages, notes, and rating, and see your reading summary refresh instantly.",
+    (
+        "Choose a book, update pages, notes, and rating, and see your reading "
+        "summary refresh instantly."
+    ),
     kicker="Progress Tracker",
 )
 
@@ -136,7 +149,12 @@ if progress is None:
             progress = api_request(
                 "POST",
                 f"/books/{selected_book_id}/progress",
-                json={"status": UI_TO_API_STATUS["want_to_read"], "current_page": 0, "rating": None, "notes": ""},
+                json={
+                    "status": UI_TO_API_STATUS["want_to_read"],
+                    "current_page": 0,
+                    "rating": None,
+                    "notes": "",
+                },
             )
         selected_book["progress"] = progress
     except RuntimeError as exc:
@@ -179,7 +197,10 @@ if safe_total_pages > 0:
         key="progress_current_page",
     )
 else:
-    st.session_state.setdefault("progress_current_page_free", int(st.session_state.get("progress_current_page", 0) or 0))
+    st.session_state.setdefault(
+        "progress_current_page_free",
+        int(st.session_state.get("progress_current_page", 0) or 0),
+    )
     pages_read = int(
         st.number_input(
             "Pages Read",
@@ -188,7 +209,12 @@ else:
             key="progress_current_page_free",
         )
     )
-    st.caption("This book has no total page count, so progress is tracked by current page only.")
+    st.caption(
+        (
+            "This book has no total page count, so progress is tracked by "
+            "current page only."
+        )
+    )
 
 rating_value = st.select_slider(
     "Rating",
@@ -204,15 +230,23 @@ notes_value = st.text_area(
     height=140,
 )
 
-completion_pct = int((int(pages_read) / safe_total_pages) * 100) if safe_total_pages > 0 else 0
+completion_pct = (
+    int((int(pages_read) / safe_total_pages) * 100) if safe_total_pages > 0 else 0
+)
 effective_pages = apply_status_to_pages(status_ui, int(pages_read), safe_total_pages)
-effective_pct = int((effective_pages / safe_total_pages) * 100) if safe_total_pages > 0 else 0
+effective_pct = (
+    int((effective_pages / safe_total_pages) * 100) if safe_total_pages > 0 else 0
+)
 if compact_layout:
     summary_col_1, summary_col_2 = st.columns(2)
     summary_col_1.metric("Completion", f"{effective_pct}%")
     summary_col_2.metric(
         "Pages",
-        f"{effective_pages} / {safe_total_pages}" if safe_total_pages > 0 else str(effective_pages),
+        (
+            f"{effective_pages} / {safe_total_pages}"
+            if safe_total_pages > 0
+            else str(effective_pages)
+        ),
     )
     st.metric(
         "Status",
@@ -227,7 +261,11 @@ else:
     summary_col_1.metric("Completion", f"{effective_pct}%")
     summary_col_2.metric(
         "Pages",
-        f"{effective_pages} / {safe_total_pages}" if safe_total_pages > 0 else str(effective_pages),
+        (
+            f"{effective_pages} / {safe_total_pages}"
+            if safe_total_pages > 0
+            else str(effective_pages)
+        ),
     )
     summary_col_3.metric(
         "Status",
@@ -307,7 +345,12 @@ if save_clicked:
         st.error(str(exc))
 
 if not real_total_pages:
-    st.info("This book has no total page count yet, so the slider stays at zero until you update the book details.")
+    st.info(
+        (
+            "This book has no total page count yet, so the slider stays at "
+            "zero until you update the book details."
+        )
+    )
 
 stats_total = len(books)
 stats_reading = sum(1 for book in books if get_book_status(book) == "reading")
