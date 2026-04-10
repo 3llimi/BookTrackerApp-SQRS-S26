@@ -88,3 +88,5 @@ uvloop==0.22.1 ; python_version >= "3.11" and python_version < "4.0" and sys_pla
 watchdog==6.0.0 ; python_version >= "3.11" and python_version < "4.0" and platform_system != "Darwin"
 watchfiles==1.1.1 ; python_version >= "3.11" and python_version < "4.0"
 websockets==16.0 ; python_version >= "3.11" and python_version < "4.0"
+hypothesis==6.151.10
+locust==2.43.3
