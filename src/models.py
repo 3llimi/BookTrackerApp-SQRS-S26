@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, DateTime, func, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, func
+from sqlalchemy import ForeignKey, CheckConstraint
 from sqlalchemy.orm import relationship
 from src.database import Base
 
@@ -29,20 +30,32 @@ class Book(Base):
 
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     owner = relationship("User", back_populates="books")
+
     progress = relationship(
-        "Progress", back_populates="book", uselist=False, cascade="all, delete"
+        "Progress",
+        back_populates="book",
+        uselist=False,
+        cascade="all, delete-orphan",
     )
 
 
 class Progress(Base):
     __tablename__ = "progress"
 
+    __table_args__ = (
+        CheckConstraint("rating >= 1 AND rating <= 5", name="check_rating_range"),
+    )
+
     id = Column(Integer, primary_key=True, index=True)
-    status = Column(String, default="not_started")
-    current_page = Column(Integer, default=0)
+    status = Column(String, nullable=False, default="not_started")
+    current_page = Column(Integer, nullable=False, default=0)
     rating = Column(Integer, nullable=True)
     notes = Column(String, nullable=True)
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now()
+    )
 
-    book_id = Column(Integer, ForeignKey("books.id"), nullable=False)
+    book_id = Column(Integer, ForeignKey("books.id"), nullable=False, unique=True)
     book = relationship("Book", back_populates="progress")
