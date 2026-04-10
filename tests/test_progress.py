@@ -44,6 +44,21 @@ def test_create_progress():
     assert response.json()["current_page"] == 50
 
 
+def test_create_progress_auto_reading_when_pages_above_zero():
+    headers = get_auth_headers()
+    book_id = create_test_book(headers, total_pages=300)
+
+    response = client.post(
+        f"/api/v1/books/{book_id}/progress",
+        json={"status": "not_started", "current_page": 1},
+        headers=headers,
+    )
+
+    assert response.status_code == 201
+    assert response.json()["status"] == "reading"
+    assert response.json()["current_page"] == 1
+
+
 def test_create_progress_409_if_already_exists():
     headers = get_auth_headers()
     book_id = create_test_book(headers)

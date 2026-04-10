@@ -40,6 +40,8 @@ def test_search_returns_simplified_list():
                 "isbn": ["9780441013593"],
                 "cover_i": 12345,
                 "first_publish_year": 1965,
+                "subject": ["Science Fiction", "Space opera"],
+                "number_of_pages_median": 412,
             }
         ]
     }
@@ -54,6 +56,8 @@ def test_search_returns_simplified_list():
     assert data[0]["author"] == "Frank Herbert"
     assert data[0]["isbn"] == "9780441013593"
     assert "covers.openlibrary.org" in data[0]["cover_url"]
+    assert data[0]["genre"] == "Science Fiction"
+    assert data[0]["total_pages"] == 412
 
 
 def test_search_handles_missing_fields():
@@ -69,6 +73,8 @@ def test_search_handles_missing_fields():
     assert data[0]["author"] is None
     assert data[0]["isbn"] is None
     assert data[0]["cover_url"] is None
+    assert data[0]["genre"] is None
+    assert data[0]["total_pages"] is None
 
 
 # ISBN lookup tests
@@ -79,6 +85,7 @@ def test_get_book_by_isbn():
         "number_of_pages": 412,
         "covers": [12345],
         "authors": [{"key": "/authors/OL123A"}],
+        "subjects": [{"name": "Science Fiction"}, {"name": "Adventure"}],
     }
 
     with patch("httpx.get", return_value=mock_response(fake_response)):
@@ -90,6 +97,7 @@ def test_get_book_by_isbn():
     assert data["total_pages"] == 412
     assert data["isbn"] == "9780441013593"
     assert "covers.openlibrary.org" in data["cover_url"]
+    assert data["genre"] == "Science Fiction"
 
 
 # error handling tests

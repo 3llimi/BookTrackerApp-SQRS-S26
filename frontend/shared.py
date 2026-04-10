@@ -41,12 +41,6 @@ STATUS_LABELS = {
     "completed": "Finished",
 }
 
-STATUS_CLASSES = {
-    "not_started": "want",
-    "reading": "reading",
-    "completed": "finished",
-}
-
 SORT_OPTIONS = {
     "Newest": ("created_at", "desc"),
     "Oldest": ("created_at", "asc"),
@@ -57,11 +51,242 @@ SORT_OPTIONS = {
     "Top Rated": ("rating", "desc"),
 }
 
+THEME_PALETTES = {
+    "dark": {
+        "bg": "radial-gradient(circle at 85% 0%, #1e3532 0%, rgba(30, 53, 50, 0.25) 28%), linear-gradient(180deg, #121518 0%, #0f1b20 48%, #172126 100%)",
+        "card": "rgba(24, 31, 36, 0.92)",
+        "card_border": "#36434f",
+        "ink": "#e8e4d7",
+        "muted": "#b8b3a2",
+        "accent": "#57b29f",
+        "accent_soft": "#274b46",
+        "sidebar": "linear-gradient(180deg, #171f25 0%, #11171c 100%)",
+        "hero": "linear-gradient(120deg, #23363d 0%, #1b2d33 50%, #213b35 100%)",
+        "hero_border": "#3f5b67",
+        "shadow": "rgba(2, 6, 9, 0.35)",
+    },
+}
+
+
+def build_global_style(motion_enabled: bool) -> str:
+    palette = THEME_PALETTES["dark"]
+    transition_rule = "all 220ms ease" if motion_enabled else "none"
+    lift_translate = "translateY(-2px)" if motion_enabled else "translateY(0)"
+    entry_animation = "bt-fade-up 0.55s ease both" if motion_enabled else "none"
+
+    return f"""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500;700&family=Manrope:wght@400;500;600;700&display=swap');
+
+:root {{
+    --bt-bg: {palette['bg']};
+    --bt-card: {palette['card']};
+    --bt-card-border: {palette['card_border']};
+    --bt-ink: {palette['ink']};
+    --bt-muted: {palette['muted']};
+    --bt-accent: {palette['accent']};
+    --bt-accent-soft: {palette['accent_soft']};
+    --bt-danger: #b54a3d;
+    --bt-sidebar: {palette['sidebar']};
+    --bt-hero: {palette['hero']};
+    --bt-hero-border: {palette['hero_border']};
+    --bt-shadow: {palette['shadow']};
+}}
+
+html,
+body,
+[class*="css"],
+[data-testid="stAppViewContainer"] {{
+    font-family: "Manrope", "Segoe UI", sans-serif;
+    color: var(--bt-ink);
+}}
+
+[data-testid="stAppViewContainer"] {{
+    background: var(--bt-bg);
+}}
+
+[data-testid="stHeader"] {{
+    background: transparent;
+}}
+
+h1, h2, h3 {{
+    font-family: "Fraunces", Georgia, serif;
+    letter-spacing: 0.2px;
+    color: var(--bt-ink);
+}}
+
+.block-container {{
+    max-width: 1280px;
+    padding-top: 1rem;
+    padding-bottom: 2rem;
+}}
+
+div[data-testid="stMetric"] {{
+    background: var(--bt-card);
+    border: 1px solid var(--bt-card-border);
+    border-radius: 14px;
+    padding: 0.7rem 0.9rem;
+    transition: {transition_rule};
+    animation: {entry_animation};
+}}
+
+div[data-testid="stMetric"]:hover {{
+    transform: {lift_translate};
+    box-shadow: 0 8px 20px var(--bt-shadow);
+}}
+
+.bt-hero {{
+    background: var(--bt-hero);
+    border: 1px solid var(--bt-hero-border);
+    border-radius: 18px;
+    padding: 1.1rem 1.2rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 8px 20px var(--bt-shadow);
+    animation: {entry_animation};
+}}
+
+.bt-hero-kicker {{
+    text-transform: uppercase;
+    font-size: 0.74rem;
+    letter-spacing: 0.11em;
+    font-weight: 700;
+    color: var(--bt-muted);
+    margin-bottom: 0.25rem;
+}}
+
+.bt-hero-title {{
+    font-family: "Fraunces", Georgia, serif;
+    font-size: 2rem;
+    line-height: 1.2;
+    margin: 0;
+    color: var(--bt-ink);
+}}
+
+.bt-hero-subtitle {{
+    margin-top: 0.45rem;
+    color: var(--bt-muted);
+    font-size: 1rem;
+}}
+
+.bt-chip {{
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    border-radius: 999px;
+    padding: 0.22rem 0.62rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border: 1px solid transparent;
+}}
+
+.bt-chip-want {{
+    background: rgba(209, 175, 119, 0.18);
+    border-color: rgba(209, 175, 119, 0.5);
+    color: #b08239;
+}}
+
+.bt-chip-reading {{
+    background: var(--bt-accent-soft);
+    border-color: rgba(87, 178, 159, 0.6);
+    color: var(--bt-accent);
+}}
+
+.bt-chip-finished {{
+    background: rgba(218, 139, 64, 0.2);
+    border-color: rgba(218, 139, 64, 0.55);
+    color: #d88b40;
+}}
+
+.bt-panel-note {{
+    color: var(--bt-muted);
+    font-size: 0.84rem;
+}}
+
+div[data-testid="stSidebar"] {{
+    background: var(--bt-sidebar);
+    border-right: 1px solid var(--bt-card-border);
+}}
+
+div[data-testid="stSidebar"] h1,
+div[data-testid="stSidebar"] h2,
+div[data-testid="stSidebar"] h3,
+div[data-testid="stSidebar"] p,
+div[data-testid="stSidebar"] span {{
+    color: var(--bt-ink);
+}}
+
+.stButton > button,
+.stFormSubmitButton > button {{
+    transition: {transition_rule};
+    min-height: 2.25rem;
+    line-height: 1.15;
+    white-space: normal;
+    text-wrap: balance;
+    padding-top: 0.38rem;
+    padding-bottom: 0.38rem;
+}}
+
+.stButton > button:hover,
+.stFormSubmitButton > button:hover {{
+    transform: {lift_translate};
+}}
+
+@keyframes bt-fade-up {{
+    from {{
+        opacity: 0;
+        transform: translateY(12px);
+    }}
+    to {{
+        opacity: 1;
+        transform: translateY(0);
+    }}
+}}
+
+@media (max-width: 960px) {{
+    .block-container {{
+        padding-left: 0.7rem;
+        padding-right: 0.7rem;
+    }}
+
+    .bt-hero {{
+        border-radius: 14px;
+        padding: 0.9rem 0.95rem;
+    }}
+
+    .bt-hero-title {{
+        font-size: 1.55rem;
+    }}
+
+    div[data-testid="stMetric"] {{
+        padding: 0.55rem 0.65rem;
+    }}
+
+    .stButton > button,
+    .stFormSubmitButton > button {{
+        min-height: 2.15rem;
+    }}
+}}
+
+@media (max-width: 680px) {{
+    .bt-hero-subtitle {{
+        font-size: 0.93rem;
+    }}
+}}
+</style>
+"""
+
+STATUS_CHIP_CLASS = {
+    "not_started": "bt-chip-want",
+    "reading": "bt-chip-reading",
+    "completed": "bt-chip-finished",
+}
+
+LAYOUT_DENSITY_OPTIONS = ["Adaptive", "Comfort", "Compact"]
 
 def configure_page(page_name: str) -> None:
-    st.set_page_config(page_title=PAGE_TITLE, layout="wide")
+    st.set_page_config(page_title=PAGE_TITLE, page_icon="📚", layout="wide")
     init_session_state()
-    inject_theme()
+    inject_global_styles()
     st.session_state["current_page_name"] = page_name
 
 
@@ -76,403 +301,29 @@ def init_session_state() -> None:
         "openlibrary_results": [],
         "openlibrary_query": "",
         "openlibrary_last_query": "",
+        "openlibrary_expanded": False,
+        "openlibrary_import_notice": None,
+        "openlibrary_clear_query_pending": False,
         "search_last_query": "",
         "search_last_value": "",
         "progress_loaded_book_id": None,
         "progress_snapshot": None,
+        "pending_delete_book_id": None,
+        "layout_density": "Adaptive",
+        "motion_enabled": True,
     }
 
     for key, value in defaults.items():
         st.session_state.setdefault(key, value)
 
 
-def inject_theme() -> None:
-    st.markdown(
-        """
-        <style>
-            :root {
-                --bt-cream: #f5f2ec;
-                --bt-paper: rgba(255, 253, 250, 0.94);
-                --bt-ink: #17313b;
-                --bt-muted: #4e6771;
-                --bt-line: rgba(24, 49, 58, 0.08);
-                --bt-teal: #186f68;
-                --bt-teal-deep: #124f4b;
-                --bt-gold: #c98b2e;
-                --bt-sky: #dff0eb;
-                --bt-peach: #fff1dd;
-                --bt-danger: #b44d41;
-            }
-
-            .stApp {
-                background:
-                    radial-gradient(circle at top left, #fff0cf 0%, rgba(255, 240, 207, 0.12) 34%),
-                    radial-gradient(circle at top right, #d7ece6 0%, rgba(215, 236, 230, 0.18) 28%),
-                    linear-gradient(180deg, #f8f5ef 0%, #f1eee7 100%);
-                color: var(--bt-ink);
-                font-family: "Trebuchet MS", "Segoe UI", sans-serif;
-            }
-
-            .block-container {
-                padding-top: 1.2rem;
-                padding-bottom: 2rem;
-                max-width: 1280px;
-            }
-
-            [data-testid="stSidebar"] {
-                background: linear-gradient(180deg, #19343e 0%, #122730 100%);
-                border-right: 1px solid rgba(255, 255, 255, 0.06);
-            }
-
-            [data-testid="stSidebarNav"],
-            [data-testid="stSidebarNavSeparator"] {
-                display: none !important;
-            }
-
-            [data-testid="stSidebar"] .stMarkdown,
-            [data-testid="stSidebar"] .stMarkdown p,
-            [data-testid="stSidebar"] label,
-            [data-testid="stSidebar"] .stCaption {
-                color: #f7f6f1 !important;
-            }
-
-            [data-testid="stSidebar"] h1,
-            [data-testid="stSidebar"] h2,
-            [data-testid="stSidebar"] h3,
-            [data-testid="stSidebar"] h4,
-            [data-testid="stSidebar"] h5,
-            [data-testid="stSidebar"] h6,
-            [data-testid="stSidebar"] [data-testid="stWidgetLabel"] p,
-            [data-testid="stSidebar"] [data-testid="stWidgetLabel"] span {
-                color: #f7f6f1 !important;
-            }
-
-            .bt-brand {
-                padding: 0.9rem 0 1rem 0;
-            }
-
-            .bt-brand small {
-                display: block;
-                letter-spacing: 0.12em;
-                text-transform: uppercase;
-                color: rgba(247, 246, 241, 0.65);
-                margin-bottom: 0.3rem;
-            }
-
-            .bt-brand strong {
-                display: block;
-                font-size: 1.45rem;
-                font-family: "Palatino Linotype", Georgia, serif;
-                line-height: 1.1;
-            }
-
-            .bt-hero {
-                background:
-                    linear-gradient(135deg, rgba(255, 250, 241, 0.96) 0%, rgba(225, 240, 236, 0.94) 100%);
-                border: 1px solid rgba(18, 115, 107, 0.12);
-                border-radius: 26px;
-                padding: 1.35rem 1.5rem;
-                box-shadow: 0 18px 42px rgba(24, 49, 58, 0.08);
-                animation: bt-fade-up 0.45s ease-out;
-                margin-bottom: 1rem;
-            }
-
-            .bt-kicker {
-                display: inline-block;
-                font-size: 0.78rem;
-                text-transform: uppercase;
-                letter-spacing: 0.12em;
-                color: var(--bt-teal);
-                margin-bottom: 0.4rem;
-                font-weight: 700;
-            }
-
-            .bt-hero h1, .bt-hero h2 {
-                margin: 0;
-                font-family: "Palatino Linotype", Georgia, serif;
-                color: var(--bt-ink);
-            }
-
-            .bt-hero p {
-                margin: 0.55rem 0 0 0;
-                color: #2f4751;
-                max-width: 58rem;
-                line-height: 1.55;
-            }
-
-            .bt-card {
-                background: var(--bt-paper);
-                border: 1px solid var(--bt-line);
-                border-radius: 24px;
-                padding: 1rem;
-                box-shadow: 0 14px 30px rgba(24, 49, 58, 0.06);
-                animation: bt-fade-up 0.45s ease-out;
-            }
-
-            .bt-card-title {
-                margin-top: 0.8rem;
-                font-size: 1.08rem;
-                font-weight: 700;
-                color: var(--bt-ink);
-                line-height: 1.3;
-            }
-
-            .bt-card-meta {
-                color: #34505a;
-                margin-top: 0.15rem;
-                margin-bottom: 0.75rem;
-            }
-
-            .bt-status {
-                display: inline-flex;
-                align-items: center;
-                border-radius: 999px;
-                padding: 0.28rem 0.72rem;
-                font-size: 0.82rem;
-                font-weight: 700;
-                margin: 0.2rem 0 0.9rem 0;
-            }
-
-            .bt-status.want {
-                background: #fff0d4;
-                color: #8c6419;
-            }
-
-            .bt-status.reading {
-                background: #dff5ef;
-                color: #126a61;
-            }
-
-            .bt-status.finished {
-                background: #dfe8ff;
-                color: #3657a0;
-            }
-
-            .bt-row {
-                background: rgba(255, 252, 247, 0.94);
-                border: 1px solid var(--bt-line);
-                border-radius: 18px;
-                padding: 0.7rem 0.9rem;
-                margin-bottom: 0.65rem;
-                box-shadow: 0 10px 22px rgba(24, 49, 58, 0.04);
-                animation: bt-fade-up 0.35s ease-out;
-            }
-
-            .bt-row strong {
-                color: var(--bt-ink);
-                font-size: 1rem;
-            }
-
-            .bt-row small {
-                color: #304b54;
-            }
-
-            .bt-empty {
-                background: rgba(255, 252, 247, 0.88);
-                border: 1px dashed rgba(18, 115, 107, 0.26);
-                border-radius: 24px;
-                padding: 2rem 1.4rem;
-                text-align: center;
-                color: #2f4a53;
-            }
-
-            .bt-cover-placeholder {
-                height: 260px;
-                border-radius: 18px;
-                border: 1px solid var(--bt-line);
-                overflow: hidden;
-            }
-
-            div[data-testid="stMetric"] {
-                background: rgba(255, 252, 247, 0.94);
-                border: 1px solid var(--bt-line);
-                border-radius: 22px;
-                padding: 0.7rem 0.95rem;
-                box-shadow: 0 12px 28px rgba(24, 49, 58, 0.05);
-            }
-
-            .stButton > button,
-            .stDownloadButton > button {
-                border-radius: 999px;
-                border: 1px solid transparent;
-                background: linear-gradient(135deg, var(--bt-teal) 0%, var(--bt-teal-deep) 100%);
-                color: #ffffff !important;
-                font-weight: 700;
-                min-height: 2.35rem;
-                box-shadow: 0 10px 22px rgba(18, 115, 107, 0.18);
-                transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
-            }
-
-            .stButton > button[kind="primary"],
-            .stFormSubmitButton > button[kind="primary"] {
-                color: #ffffff !important;
-            }
-
-            .stButton > button[kind="primary"] *,
-            .stFormSubmitButton > button[kind="primary"] *,
-            .stDownloadButton > button * {
-                color: #ffffff !important;
-                fill: #ffffff !important;
-            }
-
-            .stFormSubmitButton > button,
-            .stFormSubmitButton > button *,
-            [data-testid="stBaseButton-primary"],
-            [data-testid="stBaseButton-primary"] * {
-                color: #ffffff !important;
-                fill: #ffffff !important;
-            }
-
-            .stFormSubmitButton > button {
-                border-radius: 999px;
-                border: 1px solid transparent;
-                background: linear-gradient(135deg, var(--bt-teal) 0%, var(--bt-teal-deep) 100%);
-                color: #ffffff !important;
-                font-weight: 700;
-                min-height: 2.35rem;
-            }
-
-            .stButton > button:hover,
-            .stDownloadButton > button:hover,
-            .stFormSubmitButton > button:hover {
-                transform: translateY(-1px);
-                box-shadow: 0 14px 28px rgba(18, 115, 107, 0.24);
-            }
-
-            .stButton > button[kind="secondary"] {
-                background: rgba(255, 255, 255, 0.96);
-                color: var(--bt-ink);
-                border-color: rgba(24, 49, 58, 0.22);
-                box-shadow: none;
-            }
-
-            [data-testid="stSidebar"] .stButton > button {
-                background: linear-gradient(135deg, #355e6e 0%, #254754 100%);
-                color: #f7f6f1 !important;
-                border: 1px solid rgba(255, 255, 255, 0.18);
-                box-shadow: none;
-            }
-
-            [data-testid="stSidebar"] .stButton > button[kind="secondary"] {
-                background: #f5f3ee;
-                color: #1f3942 !important;
-                border: 1px solid rgba(30, 56, 65, 0.2);
-            }
-
-            .stTextInput input,
-            .stTextArea textarea,
-            .stSelectbox div[data-baseweb="select"] > div,
-            .stNumberInput input,
-            .stDateInput input {
-                border-radius: 7px;
-                background: rgba(255, 255, 255, 0.92);
-                color: #17303a !important;
-                border: 1px solid rgba(24, 49, 58, 0.22) !important;
-            }
-
-            .stTextInput input:focus,
-            .stTextArea textarea:focus,
-            .stSelectbox div[data-baseweb="select"] > div:focus-within,
-            .stNumberInput input:focus {
-                border-color: rgba(24, 111, 104, 0.55) !important;
-                box-shadow: 0 0 0 1px rgba(24, 111, 104, 0.25) !important;
-            }
-
-            .stTextInput input::placeholder,
-            .stTextArea textarea::placeholder {
-                color: #5c7380 !important;
-                opacity: 1;
-            }
-
-            [data-testid="stWidgetLabel"] p,
-            [data-testid="stWidgetLabel"] span,
-            .stCaption,
-            p,
-            h1, h2, h3, h4 {
-                color: #17303a !important;
-            }
-
-            .stTabs [data-baseweb="tab"] p {
-                color: #22404a !important;
-                font-weight: 700;
-            }
-
-            .stTabs [aria-selected="true"] {
-                background: #e8f3ef !important;
-                border: 1px solid rgba(18, 115, 107, 0.35) !important;
-            }
-
-            .stTabs [data-baseweb="tab-list"] {
-                gap: 0.45rem;
-            }
-
-            .stTabs [data-baseweb="tab"] {
-                border-radius: 999px;
-                padding: 0.45rem 0.9rem;
-                background: rgba(255, 255, 255, 0.6);
-            }
-
-            .stExpander {
-                border-radius: 20px;
-                overflow: hidden;
-                border: 1px solid var(--bt-line);
-                background: rgba(255, 252, 247, 0.78);
-            }
-
-            .stAlert {
-                border-radius: 16px;
-            }
-
-            [data-testid="stAlertContainer"] [role="alert"],
-            [data-testid="stAlertContainer"] [role="alert"] *,
-            [data-testid="stAlertContainer"] .stAlert,
-            [data-testid="stAlertContainer"] .stAlert * {
-                color: #ffffff !important;
-            }
-
-            [data-testid="stAlertContainer"] [role="alert"] {
-                background: linear-gradient(135deg, #1f5f96 0%, #194d7a 100%) !important;
-                border: 1px solid rgba(255, 255, 255, 0.26) !important;
-            }
-
-            [data-testid="stToast"],
-            [data-testid="stToast"] * {
-                color: #ffffff !important;
-                fill: #ffffff !important;
-            }
-
-            [data-testid="stToast"] {
-                background: linear-gradient(135deg, #1f5f96 0%, #194d7a 100%) !important;
-                border: 1px solid rgba(255, 255, 255, 0.22) !important;
-            }
-
-            @keyframes bt-fade-up {
-                from {
-                    opacity: 0;
-                    transform: translateY(10px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
 def render_sidebar(current_page: str, show_logout: bool = True) -> None:
     with st.sidebar:
-        st.markdown(
-            """
-            <div class="bt-brand">
-                <small>Streamlit Frontend</small>
-                <strong>Book Tracker</strong>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        st.title("Book Tracker")
+        st.caption("Your Reading Companion")
+        st.markdown("Track every chapter, one page at a time.")
+        st.caption("Organize your library, log reading progress, and keep notes in one place.")
+        st.divider()
 
         if st.session_state.get("token"):
             nav_targets = NAV_ITEMS[1:]
@@ -492,16 +343,19 @@ def render_sidebar(current_page: str, show_logout: bool = True) -> None:
         if show_logout and st.session_state.get("token"):
             st.divider()
             if st.button("Logout", width="stretch", type="secondary"):
-                logout_user("You have been logged out.")
+                logout_user("You have logged out successfully.")
 
 
 def render_hero(title: str, subtitle: str, kicker: str = "Book Tracker") -> None:
+    safe_kicker = escape(kicker)
+    safe_title = escape(title)
+    safe_subtitle = escape(subtitle)
     st.markdown(
         f"""
         <section class="bt-hero">
-            <span class="bt-kicker">{escape(kicker)}</span>
-            <h1>{escape(title)}</h1>
-            <p>{escape(subtitle)}</p>
+            <div class="bt-hero-kicker">{safe_kicker}</div>
+            <h1 class="bt-hero-title">{safe_title}</h1>
+            <p class="bt-hero-subtitle">{safe_subtitle}</p>
         </section>
         """,
         unsafe_allow_html=True,
@@ -509,15 +363,36 @@ def render_hero(title: str, subtitle: str, kicker: str = "Book Tracker") -> None
 
 
 def render_empty_state(title: str, body: str) -> None:
+    st.info(f"{title}\n\n{body}")
+
+
+def inject_global_styles() -> None:
     st.markdown(
-        f"""
-        <div class="bt-empty">
-            <h3>{escape(title)}</h3>
-            <p>{escape(body)}</p>
-        </div>
-        """,
+        build_global_style(
+            motion_enabled=bool(st.session_state.get("motion_enabled", True)),
+        ),
         unsafe_allow_html=True,
     )
+
+
+def get_layout_density() -> str:
+    value = str(st.session_state.get("layout_density", "Adaptive"))
+    if value not in set(LAYOUT_DENSITY_OPTIONS):
+        return "Adaptive"
+    return value
+
+
+def is_compact_layout() -> bool:
+    return get_layout_density() == "Compact"
+
+
+def get_grid_columns(default_columns: int) -> int:
+    density = get_layout_density()
+    if density == "Compact":
+        return 1
+    if density == "Comfort":
+        return max(1, default_columns - 1)
+    return max(1, default_columns)
 
 
 def go_to_page(page: str) -> None:
@@ -642,8 +517,16 @@ def get_status_label(status: str) -> str:
 
 def get_status_badge(status: str) -> str:
     label = get_status_label(status)
-    css_class = STATUS_CLASSES.get(status, "want")
-    return f'<span class="bt-status {css_class}">{escape(label)}</span>'
+    return f"Status: {label}"
+
+
+def render_status_chip(status: str) -> None:
+    label = get_status_label(status)
+    status_class = STATUS_CHIP_CLASS.get(status, "bt-chip-want")
+    st.markdown(
+        f'<span class="bt-chip {status_class}">{escape(label)}</span>',
+        unsafe_allow_html=True,
+    )
 
 
 def get_progress_value(book: dict[str, Any], field: str, default: Any = None) -> Any:
@@ -657,6 +540,91 @@ def format_rating(value: int) -> str:
     filled = chr(9733) * value
     empty = chr(9734) * (5 - value)
     return f"{filled}{empty}"
+
+
+def _normalize_quick_isbn(raw_isbn: str) -> str | None:
+    cleaned = raw_isbn.strip()
+    if not cleaned:
+        return None
+    compact = "".join(char for char in cleaned if char not in {"-", " "}).upper()
+    if len(compact) not in {10, 13}:
+        raise ValueError("ISBN must be 10 or 13 characters.")
+    if len(compact) == 10 and not (compact[:-1].isdigit() and (compact[-1].isdigit() or compact[-1] == "X")):
+        raise ValueError("ISBN-10 must contain 9 digits and a final digit or X.")
+    if len(compact) == 13 and not compact.isdigit():
+        raise ValueError("ISBN-13 must contain only digits.")
+    return compact
+
+
+def render_quick_book_panel(book: dict[str, Any], key_prefix: str) -> None:
+    st.markdown(f"#### {escape(str(book.get('title') or 'Untitled'))}")
+    st.caption(f"{book.get('author') or 'Unknown author'}")
+    render_status_chip(get_book_status(book))
+    st.markdown('<p class="bt-panel-note">Quick edit without leaving this page.</p>', unsafe_allow_html=True)
+
+    default_total_pages = "" if book.get("total_pages") is None else str(book.get("total_pages"))
+
+    with st.form(f"{key_prefix}_quick_edit_form", clear_on_submit=False):
+        quick_title = st.text_input("Title", value=str(book.get("title") or ""), key=f"{key_prefix}_quick_title")
+        quick_author = st.text_input("Author", value=str(book.get("author") or ""), key=f"{key_prefix}_quick_author")
+        quick_isbn = st.text_input("ISBN", value=str(book.get("isbn") or ""), key=f"{key_prefix}_quick_isbn")
+        quick_genre = st.text_input("Genre", value=str(book.get("genre") or ""), key=f"{key_prefix}_quick_genre")
+        quick_total_pages = st.text_input(
+            "Total Pages",
+            value=default_total_pages,
+            key=f"{key_prefix}_quick_total_pages",
+        )
+        quick_cover_url = st.text_input(
+            "Cover URL",
+            value=str(book.get("cover_url") or ""),
+            key=f"{key_prefix}_quick_cover_url",
+        )
+        save_quick_edit = st.form_submit_button("Save Quick Edit", width="stretch", type="primary")
+
+    if save_quick_edit:
+        try:
+            raw_total_pages = quick_total_pages.strip()
+            total_pages = int(raw_total_pages) if raw_total_pages else None
+            if total_pages is not None and total_pages < 0:
+                raise ValueError("Total pages must be zero or greater.")
+
+            payload = {
+                "title": quick_title.strip(),
+                "author": quick_author.strip(),
+                "isbn": _normalize_quick_isbn(quick_isbn),
+                "genre": quick_genre.strip() or None,
+                "total_pages": total_pages,
+                "cover_url": quick_cover_url.strip() or None,
+            }
+            if not payload["title"] or not payload["author"]:
+                raise ValueError("Title and author are required.")
+
+            api_request("PUT", f"/books/{book['id']}", json=payload)
+            st.toast("Book updated.")
+            st.rerun()
+        except (RuntimeError, ValueError) as exc:
+            st.error(str(exc))
+
+    action_col_1, action_col_2 = st.columns(2)
+    with action_col_1:
+        if st.button("Full Edit", key=f"{key_prefix}_full_edit", width="stretch"):
+            st.session_state["book_id"] = book["id"]
+            st.session_state["editing_book_id"] = book["id"]
+            st.session_state["book_form_loaded_id"] = None
+            go_to_page(ADD_BOOK_PAGE)
+    with action_col_2:
+        if st.button("Track", key=f"{key_prefix}_track", width="stretch", type="secondary"):
+            st.session_state["selected_book_id"] = book["id"]
+            go_to_page(PROGRESS_PAGE)
+
+
+def render_quick_book_panel_trigger(book: dict[str, Any], key_prefix: str, label: str = "Details") -> None:
+    if hasattr(st, "popover"):
+        with st.popover(label):
+            render_quick_book_panel(book, key_prefix)
+    else:
+        with st.expander(label, expanded=False):
+            render_quick_book_panel(book, key_prefix)
 
 
 def build_book_options(books: list[dict[str, Any]]) -> list[tuple[str, int]]:

@@ -28,11 +28,11 @@ def _validate_rating(rating: int | None) -> None:
 
 
 def _sync_status_with_page(progress: Progress, total_pages: int | None) -> None:
-    if total_pages and progress.current_page == total_pages:
+    current_page = int(progress.current_page or 0)
+
+    if total_pages and current_page == total_pages and current_page > 0:
         progress.status = "completed"
-    elif progress.current_page == 0:
-        progress.status = "not_started"
-    else:
+    elif current_page > 0:
         progress.status = "reading"
 
 
@@ -49,6 +49,7 @@ def create_progress(db, book_id, data, user_id):
     _validate_rating(data.rating)
 
     progress = Progress(**data.model_dump(), book_id=book_id)
+    _sync_status_with_page(progress, book.total_pages)
     db.add(progress)
     db.commit()
     db.refresh(progress)
