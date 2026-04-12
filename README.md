@@ -8,7 +8,6 @@ This repository is built for Software Quality, Reliability, and Security (SQRS) 
 - layered automated tests (unit, integration, E2E)
 - schema and business validation checks
 - static quality gates (lint, security, complexity)
-- mutation testing workflow guidance
 - Locust performance testing and reporting
 
 ## 1. Quick Start
@@ -123,20 +122,6 @@ Expected output (current run):
 Average complexity: A (2.581818181818182)
 ```
 
-### mutmut
-
-```bash
-poetry run mutmut run
-```
-
-Expected output on native Windows:
-
-```text
-To run mutmut on Windows, please use the WSL.
-```
-
-WSL note: set up a WSL virtualenv first, then run mutmut there.
-
 ### locust
 
 Start API in one terminal, then run load test in another terminal:
@@ -159,7 +144,6 @@ The values below are from actual runs/artifacts in this repository:
 - Coverage: 94.51%
 - Radon average grade: A (2.5818)
 - Bandit findings: 1 Low (B105), 0 Medium, 0 High
-- Mutation score: Not available from native Windows run (mutmut requires WSL workflow)
 - Locust P95 (aggregated): 130 ms (from docs/locust_report.html)
 
 ## 5. API Documentation Completeness
@@ -439,7 +423,6 @@ pytest --cov=src --cov-fail-under=70 --cov-report=xml
 - SQLite-specific behavior may differ from other RDBMS
 - migration testing is not present (create_all-based setup)
 - live upstream Open Library behavior is not tested in CI (mocked by design)
-- mutmut requires WSL workflow on Windows
 
 ## 6.14 Requirement Traceability (Summary)
 
