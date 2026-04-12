@@ -33,7 +33,10 @@ def create_book(
     "/",
     response_model=List[BookOut],
     summary="List and search books",
-    description="List the authenticated user's books with optional filters, sorting, and pagination.",
+    description=(
+        "List the authenticated user's books with optional filters, sorting, "
+        "and pagination."
+    ),
 )
 def list_books(
     title: Optional[str] = None,  # was only limit/offset before
