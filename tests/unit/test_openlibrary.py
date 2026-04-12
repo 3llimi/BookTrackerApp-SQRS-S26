@@ -189,7 +189,9 @@ def test_parse_total_pages_handles_supported_formats(raw_value, expected):
     assert openlibrary_service._parse_total_pages(raw_value) == expected
 
 
-def test_get_book_by_isbn_falls_back_to_work_subjects_and_parses_pagination(monkeypatch):
+def test_get_book_by_isbn_falls_back_to_work_subjects_and_parses_pagination(
+    monkeypatch,
+):
     def fake_get(url, params=None, timeout=None, follow_redirects=None):
         if "/isbn/" in url:
             return MockResponse(
@@ -201,9 +203,7 @@ def test_get_book_by_isbn_falls_back_to_work_subjects_and_parses_pagination(monk
                 }
             )
         if "/works/" in url:
-            return MockResponse(
-                json_data={"subjects": [{"name": "Science Fiction"}]}
-            )
+            return MockResponse(json_data={"subjects": [{"name": "Science Fiction"}]})
         raise AssertionError(f"Unexpected URL requested: {url}")
 
     monkeypatch.setattr(openlibrary_service.httpx, "get", fake_get)

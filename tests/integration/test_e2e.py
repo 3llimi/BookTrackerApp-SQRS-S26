@@ -201,7 +201,9 @@ def test_end_to_end_search_and_filter(client):
         total_pages=255,
     ).json()["id"]
 
-    _create_progress(client, headers, dune, status="reading", current_page=300, rating=5)
+    _create_progress(
+        client, headers, dune, status="reading", current_page=300, rating=5
+    )
     _create_progress(
         client,
         headers,
@@ -210,7 +212,9 @@ def test_end_to_end_search_and_filter(client):
         current_page=120,
         rating=4,
     )
-    _create_progress(client, headers, hobbit, status="not_started", current_page=0, rating=3)
+    _create_progress(
+        client, headers, hobbit, status="not_started", current_page=0, rating=3
+    )
     _create_progress(
         client,
         headers,

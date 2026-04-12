@@ -67,7 +67,10 @@ def list_books(
     "/{book_id}",
     response_model=BookOut,
     summary="Get book by ID",
-    description="Retrieve a single book (including nested progress) owned by the authenticated user.",
+    description=(
+        "Retrieve a single book (including nested progress) owned by the "
+        "authenticated user."
+    ),
 )
 def get_book(
     book_id: int,
@@ -83,7 +86,10 @@ def get_book(
     "/{book_id}",
     response_model=BookOut,
     summary="Update book",
-    description="Update editable fields of a user-owned book and return the updated record.",
+    description=(
+        "Update editable fields of a user-owned book and return the updated "
+        "record."
+    ),
 )
 def update_book(
     book_id: int,

@@ -2,7 +2,6 @@ from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, Literal
 from datetime import datetime
 
-
 ProgressStatus = Literal["not_started", "reading", "completed"]
 
 

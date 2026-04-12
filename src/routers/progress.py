@@ -48,7 +48,10 @@ def get_progress(
     "/{book_id}/progress",
     response_model=ProgressOut,
     summary="Update progress",
-    description="Partially update reading progress and derived status for a user-owned book.",
+    description=(
+        "Partially update reading progress and derived status for a "
+        "user-owned book."
+    ),
 )
 def update_progress(
     book_id: int,
@@ -57,4 +60,6 @@ def update_progress(
     current_user: User = Depends(get_current_user),
 ):
     """Patch reading progress values for one book."""
-    return progress_service.update_progress(db, book_id, data, user_id=current_user.id)
+    return progress_service.update_progress(
+        db, book_id, data, user_id=current_user.id
+    )

@@ -201,8 +201,8 @@ def test_filter_by_genre_is_case_insensitive(client):
     data = response.json()
     assert len(data) == 1
     assert data[0]["title"] == "The Hobbit"
-    
-    
+
+
 # user scoping
 def test_search_is_scoped_to_current_user(client):
     headers_a = register_and_login(client, email="search-owner@test.com")
@@ -215,8 +215,8 @@ def test_search_is_scoped_to_current_user(client):
 
     assert response.status_code == 200
     assert response.json() == []
-    
-    
+
+
 # pagination on filtered results
 def test_search_respects_limit_and_offset(client):
     headers = register_and_login(client)
