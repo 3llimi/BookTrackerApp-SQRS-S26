@@ -64,9 +64,7 @@ class Progress(Base):
     rating = Column(Integer, nullable=True)
     notes = Column(String, nullable=True)
     updated_at = Column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now()
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
     book_id = Column(Integer, ForeignKey("books.id"), nullable=False, unique=True)

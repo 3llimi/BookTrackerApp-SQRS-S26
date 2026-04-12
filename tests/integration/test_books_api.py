@@ -242,6 +242,7 @@ def test_delete_book_cascades_progress(client, db_session):
     )
     assert progress_after_delete is None
 
+
 def test_books_with_invalid_token_return_401(client):
     response = client.get(
         "/api/v1/books/",
@@ -311,8 +312,8 @@ def test_get_book_includes_progress_percentage(client):
     assert data["progress"] is not None
     assert data["progress"]["current_page"] == 150
     assert data["progress_percentage"] == 50.0
-    
-    
+
+
 # negative total_pages on create
 def test_create_book_negative_total_pages_returns_422(client):
     headers = register_and_login(client, email="negative-pages-create@test.com")
@@ -328,8 +329,8 @@ def test_create_book_negative_total_pages_returns_422(client):
     )
 
     assert response.status_code == 422
-    
-    
+
+
 # negative total_pages on update
 def test_update_book_negative_total_pages_returns_422(client):
     headers = register_and_login(client, email="negative-pages-update@test.com")
@@ -343,8 +344,8 @@ def test_update_book_negative_total_pages_returns_422(client):
     )
 
     assert response.status_code == 422
-    
-    
+
+
 # pagination behavior
 def test_list_books_respects_limit_and_offset(client):
     headers = register_and_login(client, email="pagination@test.com")

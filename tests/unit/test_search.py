@@ -7,7 +7,6 @@ from src.services.auth_service import create_user
 from fastapi import HTTPException
 
 
-
 def make_user(db_session, email=None):
     if email is None:
         email = f"search-user-{uuid4().hex[:8]}@test.com"
@@ -309,8 +308,8 @@ def test_hypothesis_non_matching_numeric_query_returns_empty_list(db_session, q)
     results = search_service.search_books(db_session, user.id, q=q)
 
     assert results == []
-    
-    
+
+
 # pagination to service-level
 def test_search_respects_limit_and_offset(db_session):
     user = make_user(db_session)

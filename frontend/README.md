@@ -100,8 +100,8 @@ Search and filter books with query + sidebar filters.
 | Component | Implementation | Notes |
 |---|---|---|
 | Search bar | `st.text_input("Search books")` | Partial match |
-| Genre filter | `st.selectbox("Genre", [...])` | Exact match |
-| Author filter | `st.selectbox("Author", [...])` | Exact match |
+| Genre filter | `st.selectbox("Genre", [...])` | Case-insensitive partial match |
+| Author filter | `st.selectbox("Author", [...])` | Case-insensitive partial match |
 | Status filter | `st.selectbox("Status", [...])` | Exact match |
 | Sort controls | `st.selectbox(...)` | Sort field and order |
 | Result count | `st.write("... result(s)")` | Updates per filter/query |
@@ -176,7 +176,7 @@ books = api_get("/books", params=params)
 st.caption(f"{len(books)} book{'s' if len(books) != 1 else ''}")
 ```
 
-The backend handles partial matching on title and author and exact matching on genre and status.
+The backend handles partial matching on title, author, and genre, and exact matching on status.
 
 ---
 

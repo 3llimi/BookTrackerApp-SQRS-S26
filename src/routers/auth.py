@@ -8,8 +8,15 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 # POST /api/v1/auth/register
-@router.post("/register", response_model=UserOut, status_code=201)
+@router.post(
+    "/register",
+    response_model=UserOut,
+    status_code=201,
+    summary="Register user",
+    description="Create a new user account and return the created user profile.",
+)
 def register(user_in: AuthRegister, db: Session = Depends(get_db)):
+    """Register a new user account with email, username, and password."""
     username = user_in.username or user_in.email
     user = create_user(
         db, username=username, email=user_in.email, password=user_in.password
@@ -18,8 +25,13 @@ def register(user_in: AuthRegister, db: Session = Depends(get_db)):
 
 
 # POST /api/v1/auth/login
-@router.post("/login")
+@router.post(
+    "/login",
+    summary="Login user",
+    description="Authenticate user credentials and return a bearer access token.",
+)
 def login(user_in: AuthLogin, db: Session = Depends(get_db)):
+    """Authenticate a user and return a JWT bearer token."""
     user = authenticate_user(db, email=user_in.email, password=user_in.password)
     token = create_jwt_token(email=user.email)
     return {"access_token": token, "token_type": "bearer"}

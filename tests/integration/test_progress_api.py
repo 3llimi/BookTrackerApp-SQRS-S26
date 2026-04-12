@@ -276,8 +276,8 @@ def test_nested_progress_visible_in_get_book(client):
     assert data["progress"]["status"] == "reading"
     assert data["progress"]["current_page"] == 80
     assert data["progress"]["rating"] == 5
-    
-    
+
+
 def test_create_progress_auto_reading_when_current_page_above_zero(client):
     headers = register_and_login(client, email="progress-auto-reading@test.com")
     book_id = create_book(client, headers, total_pages=300)
@@ -395,8 +395,8 @@ def test_patch_progress_invalid_status_returns_422(client):
     )
 
     assert response.status_code == 422
-    
-    
+
+
 # negative current_page on patch
 def test_patch_progress_negative_current_page_returns_422(client):
     headers = register_and_login(client, email="progress-negative-patch@test.com")
@@ -416,8 +416,8 @@ def test_patch_progress_negative_current_page_returns_422(client):
     )
 
     assert response.status_code == 422
-    
-    
+
+
 # create progress on other user’s book
 def test_create_progress_on_other_users_book_returns_404(client):
     headers_a = register_and_login(client, email="progress-create-owner@test.com")
