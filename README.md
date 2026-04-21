@@ -1,5 +1,7 @@
 # Book Tracker App (SQRS S26)
 
+![BookTrackerApp Banner](assets/banner.png)
+
 Book Tracker is a FastAPI + Streamlit application for personal reading management.
 It supports authentication, book CRUD, reading progress tracking, filtering/search, and Open Library integration.
 
