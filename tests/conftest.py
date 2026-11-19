@@ -13,6 +13,8 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 os.environ["JWT_SECRET"] = "test-secret-key"
+# Never let a local .env point the tests at a real (e.g. Neon) database.
+os.environ["DATABASE_URL"] = "sqlite://"
 
 from src.database import Base, get_db  # noqa: E402
 from src.main import app  # noqa: E402
