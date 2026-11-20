@@ -12,6 +12,18 @@ This repository is built for Software Quality, Reliability, and Security (SQRS) 
 - static quality gates (lint, security, complexity)
 - Locust performance testing and reporting
 
+## Live Demo
+
+- App (Streamlit): https://bookstracker.streamlit.app/
+- API docs (Swagger UI): https://booktracker-api-3f3a.onrender.com/docs
+
+Demo account (or register your own):
+
+- Email: `test@test.com`
+- Password: `test123`
+
+The app is deployed on free tiers (see [9. Deployment](#9-deployment)), so the first request after a period of inactivity can take about 30 seconds while the API wakes up.
+
 ## 1. Quick Start
 
 ### Prerequisites
@@ -24,6 +36,19 @@ This repository is built for Software Quality, Reliability, and Security (SQRS) 
 ```bash
 poetry install
 ```
+
+### Environment variables
+
+Create a `.env` file in the project root (it is gitignored):
+
+```text
+JWT_SECRET=replace-with-a-long-random-secret
+```
+
+Optional:
+
+- `DATABASE_URL`: Postgres connection string. When it is not set, the app uses the local SQLite file `books.db`, so no database server is needed for local development.
+- `BOOKTRACKER_API_BASE`: API URL used by the Streamlit frontend. Defaults to `http://localhost:8000/api/v1`.
 
 ### Run the API (FastAPI)
 
@@ -422,7 +447,7 @@ pytest --cov=src --cov-fail-under=70 --cov-report=xml
 
 ## 6.13 Known Limitations
 
-- SQLite-specific behavior may differ from other RDBMS
+- tests run on SQLite while the deployed app runs on PostgreSQL, so SQLite-specific behavior may differ from production
 - migration testing is not present (create_all-based setup)
 - live upstream Open Library behavior is not tested in CI (mocked by design)
 
@@ -455,3 +480,53 @@ If a pip-compatible export is required:
 ```bash
 poetry export -f requirements.txt --output requirements.txt --without-hashes
 ```
+
+## 9. Deployment
+
+The deployed app is made of three free services, all driven from the `main` branch of this repository:
+
+```mermaid
+flowchart LR
+		U[Browser] --> S[Streamlit Community Cloud<br/>frontend]
+		S -->|HTTPS, BOOKTRACKER_API_BASE| R[Render<br/>FastAPI in Docker]
+		R -->|DATABASE_URL| N[(Neon<br/>PostgreSQL)]
+```
+
+| Layer | Service | Source | Configuration |
+| --- | --- | --- | --- |
+| Frontend | Streamlit Community Cloud | `streamlit_app.py` | Secret `BOOKTRACKER_API_BASE` |
+| API | Render (Docker) | [Dockerfile](Dockerfile) and [render.yaml](render.yaml) | `DATABASE_URL`, `JWT_SECRET`, `PORT` |
+| Database | Neon (PostgreSQL) | [neon.ts](neon.ts) | Connection string used as `DATABASE_URL` |
+
+### Database selection
+
+[src/database.py](src/database.py) chooses the database from the `DATABASE_URL` environment variable:
+
+- not set: SQLite file `books.db` (local development)
+- `postgres://...` or `postgresql://...`: converted to `postgresql+psycopg://...` and used with connection health checks (`pool_pre_ping`)
+
+Tests always run on an in-memory SQLite database. [tests/conftest.py](tests/conftest.py) forces this, so a local `.env` can never point the test suite at a real database.
+
+### Deploy the API (Render)
+
+1. Push the code to `main`.
+2. In Render, choose New, then Blueprint, and select this repository. Render reads [render.yaml](render.yaml).
+3. Set `DATABASE_URL` to the pooled Neon connection string. `JWT_SECRET` is generated automatically.
+4. Open `/docs` on the service URL to confirm the API is running.
+
+Keep secrets such as `DATABASE_URL` and `JWT_SECRET` in the Render dashboard only. Never commit them.
+
+### Deploy the frontend (Streamlit Community Cloud)
+
+1. Create a new app from this repository: branch `main`, main file `streamlit_app.py`, Python 3.11.
+2. Under Advanced settings, add this secret:
+
+```toml
+BOOKTRACKER_API_BASE = "https://booktracker-api-3f3a.onrender.com/api/v1"
+```
+
+### Free tier notes
+
+- Render puts the API to sleep after about 15 minutes without traffic, so the next request takes roughly 30 seconds.
+- User data is stored in Neon, so it survives API restarts and redeploys. The local SQLite file on Render's disk does not, which is why `DATABASE_URL` must be set in production.
+- CI runs on every push and pull request to `main`. See [.github/workflows/ci.yml](.github/workflows/ci.yml).
