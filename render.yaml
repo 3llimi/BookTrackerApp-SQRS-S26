@@ -1,0 +1,17 @@
+# Render Blueprint: deploys the FastAPI backend from the Dockerfile.
+# The Streamlit frontend is hosted separately on Streamlit Community Cloud.
+services:
+  - type: web
+    name: booktracker-api
+    runtime: docker
+    plan: free
+    branch: main
+    autoDeployTrigger: commit   # redeploy on every push to main
+    healthCheckPath: /docs
+    envVars:
+      - key: PORT
+        value: "8000"           # matches the port in the Dockerfile CMD
+      - key: JWT_SECRET
+        generateValue: true     # Render creates a random secret for you
+      - key: DATABASE_URL
+        sync: false             # paste your Neon connection string in the Render dashboard

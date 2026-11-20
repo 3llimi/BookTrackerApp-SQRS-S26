@@ -16,3 +16,5 @@ mutants/
 .streamlit/
 .env
 .hypothesis/
+.neon
+node_modules/
