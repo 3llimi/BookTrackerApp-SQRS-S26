@@ -54,6 +54,10 @@ def clear_filters() -> None:
 configure_page("My Books")
 require_auth()
 render_sidebar("pages/1_my_books.py")
+
+books_notice = st.session_state.pop("books_notice", None)
+if books_notice:
+    st.toast(books_notice)
 render_hero(
     "My Books",
     (
@@ -179,6 +183,33 @@ for book in books:
 selected_sort_mode = BOOK_SORT_OPTIONS[selected_sort_label]
 
 
+@st.dialog("Delete this book?")
+def confirm_delete_dialog(book: dict[str, object]) -> None:
+    st.write(
+        f"“{md_escape(book['title'])}” and its reading progress will be "
+        "permanently removed. This can't be undone."
+    )
+    cancel_col, confirm_col = st.columns(2)
+    with cancel_col:
+        if st.button("Cancel", key="delete_cancel", width="stretch"):
+            st.rerun()
+    with confirm_col:
+        if st.button(
+            "Delete Book", key="delete_confirm", width="stretch", type="primary"
+        ):
+            try:
+                api_request("DELETE", f"/books/{book['id']}", expect_json=False)
+            except RuntimeError as exc:
+                st.error(str(exc))
+                return
+            for key in ("book_id", "editing_book_id", "selected_book_id"):
+                if st.session_state.get(key) == book["id"]:
+                    st.session_state[key] = None
+            # A toast fired right before a rerun is lost, so show it on the next run.
+            st.session_state["books_notice"] = f"Deleted “{book['title']}”."
+            st.rerun()
+
+
 def _book_sort_key(book: dict[str, object]):
     if selected_sort_mode == "recent":
         return int(book.get("id") or 0)
@@ -195,8 +226,6 @@ if not filtered_books:
         "Try a broader search term or clear filters to see your full collection.",
     )
     st.stop()
-
-pending_delete_book_id = st.session_state.get("pending_delete_book_id")
 
 for row_start in range(0, len(filtered_books), cards_per_row):
     columns = st.columns(cards_per_row, gap="large")
@@ -250,55 +279,11 @@ for row_start in range(0, len(filtered_books), cards_per_row):
                     render_quick_book_panel_trigger(
                         book, key_prefix=f"my_books_{book['id']}", label="Details"
                     )
-                delete_column = bottom_action_col_2
-
-                with delete_column:
-                    if pending_delete_book_id == book["id"]:
-                        st.warning("Delete this book?")
-                        confirm_col, cancel_col = st.columns(2)
-                        with confirm_col:
-                            if st.button(
-                                "Confirm",
-                                key=f"confirm_delete_{book['id']}",
-                                width="stretch",
-                            ):
-                                try:
-                                    api_request(
-                                        "DELETE",
-                                        f"/books/{book['id']}",
-                                        expect_json=False,
-                                    )
-                                    if st.session_state.get("book_id") == book["id"]:
-                                        st.session_state["book_id"] = None
-                                    if (
-                                        st.session_state.get("editing_book_id")
-                                        == book["id"]
-                                    ):
-                                        st.session_state["editing_book_id"] = None
-                                    if (
-                                        st.session_state.get("selected_book_id")
-                                        == book["id"]
-                                    ):
-                                        st.session_state["selected_book_id"] = None
-                                    st.session_state["pending_delete_book_id"] = None
-                                    st.toast(f"Deleted “{book['title']}”.")
-                                    st.rerun()
-                                except RuntimeError as exc:
-                                    st.error(str(exc))
-                        with cancel_col:
-                            if st.button(
-                                "Cancel",
-                                key=f"cancel_delete_{book['id']}",
-                                width="stretch",
-                                type="secondary",
-                            ):
-                                st.session_state["pending_delete_book_id"] = None
-                                st.rerun()
-                    elif st.button(
+                with bottom_action_col_2:
+                    if st.button(
                         "Delete",
                         key=f"delete_{book['id']}",
                         width="stretch",
                         type="secondary",
                     ):
-                        st.session_state["pending_delete_book_id"] = book["id"]
-                        st.rerun()
+                        confirm_delete_dialog(book)

@@ -274,7 +274,11 @@ render_metrics(
         ("Completion", f"{completion_pct}%" if safe_total_pages > 0 else "N/A"),
         (
             "Pages",
-            f"{pages_read} / {safe_total_pages}" if safe_total_pages > 0 else pages_read,
+            (
+                f"{pages_read} / {safe_total_pages}"
+                if safe_total_pages > 0
+                else pages_read
+            ),
         ),
         ("Status", STATUS_UI_LABELS[status_ui]),
     ],
