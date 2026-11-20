@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from html import escape
 import os
+import re
+import textwrap
 from typing import Any
 from urllib.parse import quote
 
@@ -15,6 +17,15 @@ MY_BOOKS_PAGE = "pages/1_my_books.py"
 ADD_BOOK_PAGE = "pages/2_add_book.py"
 SEARCH_PAGE = "pages/3_search.py"
 PROGRESS_PAGE = "pages/4_progress.py"
+
+BOOK_FORM_FIELDS = {
+    "title": "book_form_title",
+    "author": "book_form_author",
+    "isbn": "book_form_isbn",
+    "genre": "book_form_genre",
+    "total_pages": "book_form_total_pages",
+    "cover_url": "book_form_cover_url",
+}
 
 NAV_ITEMS = [
     ("Login", LOGIN_PAGE),
@@ -240,6 +251,28 @@ div[data-testid="stSidebar"] span {{
     transform: {lift_translate};
 }}
 
+[data-testid="stHeaderActionElements"] {{
+    display: none;
+}}
+
+.block-container h3 {{
+    font-size: 1.2rem;
+    line-height: 1.3;
+    padding: 0.25rem 0 0.1rem;
+    overflow-wrap: anywhere;
+}}
+
+[data-testid="stImage"] img {{
+    border-radius: 10px;
+}}
+
+@media (prefers-reduced-motion: reduce) {{
+    *, *::before, *::after {{
+        animation: none !important;
+        transition: none !important;
+    }}
+}}
+
 @keyframes bt-fade-up {{
     from {{
         opacity: 0;
@@ -280,6 +313,24 @@ div[data-testid="stSidebar"] span {{
     .bt-hero-subtitle {{
         font-size: 0.93rem;
     }}
+
+    [data-testid="stImage"] {{
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }}
+
+    [data-testid="stImageContainer"] {{
+        margin-left: auto;
+        margin-right: auto;
+    }}
+
+    [data-testid="stImage"] img {{
+        width: auto !important;
+        max-width: 100%;
+        max-height: 260px;
+        object-fit: contain;
+    }}
 }}
 </style>
 """
@@ -317,7 +368,7 @@ def init_session_state() -> None:
         "openlibrary_clear_query_pending": False,
         "search_last_query": "",
         "search_last_value": "",
-        "progress_loaded_book_id": None,
+        "progress_loaded_sig": None,
         "progress_snapshot": None,
         "pending_delete_book_id": None,
         "layout_density": "Adaptive",
@@ -351,6 +402,8 @@ def render_sidebar(current_page: str, show_logout: bool = True) -> None:
                 width="stretch",
                 type=button_type,
             ):
+                if page == ADD_BOOK_PAGE:
+                    prepare_book_form(None)
                 go_to_page(page)
 
         if show_logout and st.session_state.get("token"):
@@ -413,6 +466,37 @@ def go_to_page(page: str) -> None:
     st.stop()
 
 
+def prepare_book_form(book_id: int | None = None) -> None:
+    """Point the Add Book page at a new book (None) or at an existing one to edit."""
+    st.session_state["book_id"] = book_id
+    st.session_state["editing_book_id"] = book_id
+    st.session_state["book_form_loaded_id"] = None
+    if book_id is None:
+        st.session_state["book_form_reset_pending"] = True
+
+
+def open_book_form(book_id: int | None = None) -> None:
+    prepare_book_form(book_id)
+    go_to_page(ADD_BOOK_PAGE)
+
+
+_MARKDOWN_SPECIALS = re.compile(r"([\\`*_\[\]#$~<>|:!])")
+
+
+def md_escape(value: object) -> str:
+    """Escape text so Streamlit markdown shows it literally (no bold, LaTeX, emoji)."""
+    return _MARKDOWN_SPECIALS.sub(r"\\\1", str(value or ""))
+
+
+def parse_total_pages(raw_value: str) -> int | None:
+    cleaned = (raw_value or "").strip()
+    if not cleaned:
+        return None
+    if not cleaned.isdigit():
+        raise ValueError("Total pages must be a whole number, like 320.")
+    return int(cleaned)
+
+
 def require_auth() -> None:
     if not st.session_state.get("token"):
         st.session_state["auth_notice"] = "Please log in to continue."
@@ -426,7 +510,7 @@ def logout_user(message: str | None = None) -> None:
         "editing_book_id",
         "selected_book_id",
         "book_form_loaded_id",
-        "progress_loaded_book_id",
+        "progress_loaded_sig",
         "progress_snapshot",
     ):
         st.session_state[key] = None
@@ -503,7 +587,17 @@ def cover_image_source(title: str, cover_url: str | None = None) -> str:
     if cover_url:
         return cover_url
 
-    short_title = escape((title or "Book")[:40])
+    wrapped = textwrap.wrap(
+        (title or "Book").strip() or "Book", width=16, break_long_words=True
+    )
+    if len(wrapped) > 5:
+        wrapped = wrapped[:5]
+        wrapped[-1] = wrapped[-1][:15].rstrip() + "…"
+    title_lines = "".join(
+        f'<tspan x="210" dy="{0 if idx == 0 else 40}">{escape(line)}</tspan>'
+        for idx, line in enumerate(wrapped)
+    )
+    title_y = 310 - 20 * (len(wrapped) - 1)
     svg = f"""
     <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -529,23 +623,25 @@ def cover_image_source(title: str, cover_url: str | None = None) -> str:
         />
         <text
             x="210"
-            y="240"
+            y="110"
             text-anchor="middle"
-            font-family="Georgia, serif"
-            font-size="34"
-            fill="#fff6ea"
+            font-family="Segoe UI, sans-serif"
+            font-size="18"
+            letter-spacing="4"
+            fill="#f7f1e7"
+            fill-opacity="0.75"
         >
-            Book Tracker
+            BOOK TRACKER
         </text>
         <text
             x="210"
-            y="305"
+            y="{title_y}"
             text-anchor="middle"
-            font-family="Segoe UI, sans-serif"
-            font-size="22"
-            fill="#f7f1e7"
+            font-family="Georgia, serif"
+            font-size="32"
+            fill="#fff6ea"
         >
-            {short_title}
+            {title_lines}
         </text>
     </svg>
     """
@@ -605,8 +701,8 @@ def _normalize_quick_isbn(raw_isbn: str) -> str | None:
 
 
 def render_quick_book_panel(book: dict[str, Any], key_prefix: str) -> None:
-    st.markdown(f"#### {escape(str(book.get('title') or 'Untitled'))}")
-    st.caption(f"{book.get('author') or 'Unknown author'}")
+    st.markdown(f"#### {md_escape(book.get('title') or 'Untitled')}")
+    st.caption(md_escape(book.get("author") or "Unknown author"))
     render_status_chip(get_book_status(book))
     st.markdown(
         '<p class="bt-panel-note">Quick edit without leaving this page.</p>',
@@ -648,10 +744,7 @@ def render_quick_book_panel(book: dict[str, Any], key_prefix: str) -> None:
 
     if save_quick_edit:
         try:
-            raw_total_pages = quick_total_pages.strip()
-            total_pages = int(raw_total_pages) if raw_total_pages else None
-            if total_pages is not None and total_pages < 0:
-                raise ValueError("Total pages must be zero or greater.")
+            total_pages = parse_total_pages(quick_total_pages)
 
             payload = {
                 "title": quick_title.strip(),
@@ -673,10 +766,7 @@ def render_quick_book_panel(book: dict[str, Any], key_prefix: str) -> None:
     action_col_1, action_col_2 = st.columns(2)
     with action_col_1:
         if st.button("Full Edit", key=f"{key_prefix}_full_edit", width="stretch"):
-            st.session_state["book_id"] = book["id"]
-            st.session_state["editing_book_id"] = book["id"]
-            st.session_state["book_form_loaded_id"] = None
-            go_to_page(ADD_BOOK_PAGE)
+            open_book_form(book["id"])
     with action_col_2:
         if st.button(
             "Track", key=f"{key_prefix}_track", width="stretch", type="secondary"

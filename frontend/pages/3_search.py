@@ -8,16 +8,16 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 import streamlit as st  # noqa: E402
 
 from shared import (  # noqa: E402
-    ADD_BOOK_PAGE,
     PROGRESS_PAGE,
     api_request,
     configure_page,
     format_rating,
     get_book_status,
-    is_compact_layout,
     get_progress_value,
-    get_status_badge,
     go_to_page,
+    is_compact_layout,
+    md_escape,
+    open_book_form,
     render_empty_state,
     render_hero,
     render_quick_book_panel_trigger,
@@ -204,10 +204,11 @@ for book in results:
     rating = int(get_progress_value(book, "rating") or 0)
     with st.container(border=True):
         if compact_layout:
-            st.markdown(f"**{book['title']}**")
+            st.markdown(f"**{md_escape(book['title'])}**")
             st.caption(
                 (
-                    f"{book['author']} | {book.get('genre') or 'No Genre'} | "
+                    f"{md_escape(book['author'])} | "
+                    f"{md_escape(book.get('genre') or 'No Genre')} | "
                     f"{format_rating(rating)}"
                 )
             )
@@ -220,7 +221,6 @@ for book in results:
             action_col_1, action_col_2, action_col_3 = st.columns(3)
             with action_col_1:
                 render_status_chip(status)
-                st.caption(get_status_badge(status))
             with action_col_2:
                 if st.button(
                     "Track",
@@ -237,10 +237,11 @@ for book in results:
         else:
             content_col, action_col = st.columns([4.0, 1.5])
             with content_col:
-                st.markdown(f"**{book['title']}**")
+                st.markdown(f"**{md_escape(book['title'])}**")
                 st.caption(
                     (
-                        f"{book['author']} | {book.get('genre') or 'No Genre'} | "
+                        f"{md_escape(book['author'])} | "
+                        f"{md_escape(book.get('genre') or 'No Genre')} | "
                         f"{format_rating(rating)}"
                     )
                 )
@@ -251,7 +252,6 @@ for book in results:
                     st.caption("No total pages set")
             with action_col:
                 render_status_chip(status)
-                st.caption(get_status_badge(status))
                 if st.button(
                     "Track",
                     key=f"search_track_{book['id']}",
@@ -266,10 +266,7 @@ for book in results:
                     width="stretch",
                     type="secondary",
                 ):
-                    st.session_state["book_id"] = book["id"]
-                    st.session_state["editing_book_id"] = book["id"]
-                    st.session_state["book_form_loaded_id"] = None
-                    go_to_page(ADD_BOOK_PAGE)
+                    open_book_form(book["id"])
                 render_quick_book_panel_trigger(
                     book, key_prefix=f"search_{book['id']}", label="Details"
                 )

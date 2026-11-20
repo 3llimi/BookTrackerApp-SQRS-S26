@@ -15,52 +15,41 @@ from shared import (  # noqa: E402
     configure_page,
     format_rating,
     get_book_status,
-    is_compact_layout,
-    get_status_badge,
     get_progress_value,
+    is_compact_layout,
     render_empty_state,
     render_hero,
     render_sidebar,
     require_auth,
 )
 
+STATUS_UI_LABELS = {
+    "want_to_read": "Want to Read",
+    "reading": "Reading",
+    "finished": "Finished",
+}
 
-def sync_progress_state(
-    book_id: int, total_pages: int, progress: dict[str, object]
-) -> None:
-    raw_current_page = int(progress.get("current_page") or 0)
-    current_page = (
-        min(raw_current_page, total_pages)
-        if total_pages > 0
-        else max(raw_current_page, 0)
-    )
-
-    st.session_state["progress_loaded_book_id"] = book_id
-    st.session_state["progress_status_ui"] = API_TO_UI_STATUS.get(
-        progress.get("status", "not_started"), "want_to_read"
-    )
-    st.session_state["progress_current_page"] = current_page
-    st.session_state["progress_current_page_free"] = current_page
-    st.session_state["progress_rating"] = int(progress.get("rating") or 0)
-    st.session_state["progress_notes"] = progress.get("notes") or ""
-    st.session_state["progress_snapshot"] = {
-        "status_ui": st.session_state["progress_status_ui"],
-        "current_page": current_page,
-        "rating": st.session_state["progress_rating"],
-        "notes": st.session_state["progress_notes"],
-    }
+# Widget-backed keys. Streamlit forgets a widget's value once its page is left, so
+# the page checks for these before trusting the "already loaded" marker.
+PROGRESS_WIDGET_KEYS = (
+    "progress_status_ui",
+    "progress_current_page",
+    "progress_rating",
+    "progress_notes",
+)
 
 
 def apply_status_to_pages(status_ui: str, current_page: int, total_pages: int) -> int:
-    if total_pages <= 0:
-        if status_ui == "want_to_read":
-            return 0
-        return max(int(current_page or 0), 1)
+    """Return the page count that matches a status the reader just picked."""
+    current_page = int(current_page or 0)
     if status_ui == "want_to_read":
         return 0
+    if total_pages <= 0:
+        return max(current_page, 1)
     if status_ui == "finished":
         return total_pages
-    return max(1, min(current_page or 1, total_pages))
+    # "Reading": keep the reader's place, but never sit on page 0 or the last page.
+    return max(1, min(current_page, total_pages - 1)) if total_pages > 1 else 1
 
 
 def derive_status_ui_from_pages(current_page: int, total_pages: int) -> str:
@@ -73,16 +62,73 @@ def derive_status_ui_from_pages(current_page: int, total_pages: int) -> str:
     return "reading"
 
 
-def restore_progress_snapshot(snapshot: dict[str, object] | None) -> None:
+def sync_progress_state(
+    signature: tuple[int, int], total_pages: int, progress: dict[str, object]
+) -> None:
+    raw_current_page = max(int(progress.get("current_page") or 0), 0)
+    current_page = min(raw_current_page, total_pages) if total_pages > 0 else (
+        raw_current_page
+    )
+    status_ui = API_TO_UI_STATUS.get(
+        str(progress.get("status") or "not_started"), "want_to_read"
+    )
+    if status_ui == "finished" and total_pages <= 0:
+        status_ui = "reading"
+    current_page = apply_status_to_pages(status_ui, current_page, total_pages)
+    status_ui = derive_status_ui_from_pages(current_page, total_pages)
+
+    st.session_state["progress_loaded_sig"] = signature
+    st.session_state["progress_total_pages"] = total_pages
+    st.session_state["progress_status_ui"] = status_ui
+    st.session_state["progress_current_page"] = current_page
+    st.session_state["progress_rating"] = int(progress.get("rating") or 0)
+    st.session_state["progress_notes"] = progress.get("notes") or ""
+    st.session_state["progress_snapshot"] = {
+        "status_ui": status_ui,
+        "current_page": current_page,
+        "rating": st.session_state["progress_rating"],
+        "notes": st.session_state["progress_notes"],
+    }
+
+
+def on_status_change() -> None:
+    """The reader picked a status: move the page counter to match it."""
+    total_pages = int(st.session_state.get("progress_total_pages", 0) or 0)
+    pages = apply_status_to_pages(
+        st.session_state["progress_status_ui"],
+        st.session_state.get("progress_current_page", 0),
+        total_pages,
+    )
+    st.session_state["progress_current_page"] = pages
+    st.session_state["progress_status_ui"] = derive_status_ui_from_pages(
+        pages, total_pages
+    )
+
+
+def on_pages_change() -> None:
+    """The reader moved the page counter: keep the status in step with it."""
+    total_pages = int(st.session_state.get("progress_total_pages", 0) or 0)
+    st.session_state["progress_status_ui"] = derive_status_ui_from_pages(
+        int(st.session_state.get("progress_current_page", 0) or 0), total_pages
+    )
+
+
+def discard_changes() -> None:
+    snapshot = st.session_state.get("progress_snapshot")
     if not snapshot:
         return
-    st.session_state["progress_status_ui"] = snapshot.get("status_ui", "want_to_read")
-    st.session_state["progress_current_page"] = int(snapshot.get("current_page") or 0)
-    st.session_state["progress_current_page_free"] = int(
-        snapshot.get("current_page") or 0
-    )
-    st.session_state["progress_rating"] = int(snapshot.get("rating") or 0)
-    st.session_state["progress_notes"] = snapshot.get("notes") or ""
+    st.session_state["progress_status_ui"] = snapshot["status_ui"]
+    st.session_state["progress_current_page"] = int(snapshot["current_page"])
+    st.session_state["progress_rating"] = int(snapshot["rating"])
+    st.session_state["progress_notes"] = snapshot["notes"]
+    st.session_state["progress_notice"] = "Changes discarded."
+
+
+def render_metrics(items: list[tuple[str, object]], per_row: int) -> None:
+    for start in range(0, len(items), per_row):
+        row = items[start : start + per_row]
+        for column, (label, value) in zip(st.columns(per_row), row):
+            column.metric(label, value)
 
 
 configure_page("Progress")
@@ -98,18 +144,18 @@ render_hero(
 )
 
 compact_layout = is_compact_layout()
-st.session_state.setdefault("progress_restore_pending", False)
 
 progress_notice = st.session_state.pop("progress_notice", None)
 if progress_notice:
     st.success(progress_notice)
 
 try:
-    books = api_request(
-        "GET",
-        "/books/",
-        params={"limit": 200, "sort": "title", "order": "asc"},
-    )
+    with st.spinner("Loading your books..."):
+        books = api_request(
+            "GET",
+            "/books/",
+            params={"limit": 200, "sort": "title", "order": "asc"},
+        )
 except RuntimeError as exc:
     st.error(str(exc))
     st.stop()
@@ -121,26 +167,23 @@ if not books:
     )
     st.stop()
 
-book_options = build_book_options(books)
-label_to_id = dict(book_options)
-book_ids = [book_id for _, book_id in book_options]
+book_labels = {book_id: label for label, book_id in build_book_options(books)}
+book_ids = list(book_labels)
 
 selected_book_id = st.session_state.get("selected_book_id")
 if selected_book_id not in book_ids:
     selected_book_id = book_ids[0]
-    st.session_state["selected_book_id"] = selected_book_id
 
-selected_label = st.selectbox(
+selected_book_id = st.selectbox(
     "Choose a Book",
-    [label for label, _ in book_options],
+    book_ids,
     index=book_ids.index(selected_book_id),
+    format_func=lambda book_id: book_labels[book_id],
 )
-selected_book_id = label_to_id[selected_label]
 st.session_state["selected_book_id"] = selected_book_id
 
 selected_book = next(book for book in books if int(book["id"]) == int(selected_book_id))
-real_total_pages = int(selected_book.get("total_pages") or 0)
-safe_total_pages = real_total_pages if real_total_pages > 0 else 0
+safe_total_pages = max(int(selected_book.get("total_pages") or 0), 0)
 progress = selected_book.get("progress")
 
 if progress is None:
@@ -161,66 +204,59 @@ if progress is None:
         st.error(str(exc))
         st.stop()
 
-if st.session_state.get("progress_loaded_book_id") != selected_book_id:
-    sync_progress_state(selected_book_id, safe_total_pages, progress)
+# Reload the form when the book (or its page count) changed, or when Streamlit
+# dropped the widget values because the reader left this page and came back.
+signature = (int(selected_book_id), safe_total_pages)
+if st.session_state.get("progress_loaded_sig") != signature or any(
+    key not in st.session_state for key in PROGRESS_WIDGET_KEYS
+):
+    sync_progress_state(signature, safe_total_pages, progress)
 
-if st.session_state.pop("progress_restore_pending", False):
-    restore_progress_snapshot(st.session_state.get("progress_snapshot"))
-
-auto_status_ui = derive_status_ui_from_pages(
-    int(st.session_state.get("progress_current_page", 0) or 0),
-    safe_total_pages,
-)
-if st.session_state.get("progress_status_ui") != auto_status_ui:
-    st.session_state["progress_status_ui"] = auto_status_ui
+status_options = ["want_to_read", "reading"]
+if safe_total_pages > 0:
+    status_options.append("finished")
 
 status_ui = st.radio(
     "Reading Status",
-    options=["want_to_read", "reading", "finished"],
+    options=status_options,
     horizontal=True,
     key="progress_status_ui",
-    format_func=lambda value: {
-        "want_to_read": "Want to Read",
-        "reading": "Reading",
-        "finished": "Finished",
-    }[value],
+    format_func=lambda value: STATUS_UI_LABELS[value],
+    on_change=on_status_change,
 )
 
-status_api = UI_TO_API_STATUS[status_ui]
-st.caption(get_status_badge(status_api))
-
 if safe_total_pages > 0:
-    pages_read = st.slider(
-        "Pages Read",
-        min_value=0,
-        max_value=safe_total_pages,
-        key="progress_current_page",
+    pages_read = int(
+        st.slider(
+            "Pages Read",
+            min_value=0,
+            max_value=safe_total_pages,
+            key="progress_current_page",
+            on_change=on_pages_change,
+        )
     )
 else:
-    st.session_state.setdefault(
-        "progress_current_page_free",
-        int(st.session_state.get("progress_current_page", 0) or 0),
-    )
     pages_read = int(
         st.number_input(
             "Pages Read",
             min_value=0,
             step=1,
-            key="progress_current_page_free",
+            key="progress_current_page",
+            on_change=on_pages_change,
         )
     )
     st.caption(
-        (
-            "This book has no total page count, so progress is tracked by "
-            "current page only."
-        )
+        "This book has no total page count, so progress is tracked by current page "
+        "only. Add the page count in Edit Book to unlock the Finished status."
     )
 
-rating_value = st.select_slider(
-    "Rating",
-    options=[0, 1, 2, 3, 4, 5],
-    key="progress_rating",
-    format_func=format_rating,
+rating_value = int(
+    st.select_slider(
+        "Rating",
+        options=[0, 1, 2, 3, 4, 5],
+        key="progress_rating",
+        format_func=format_rating,
+    )
 )
 
 notes_value = st.text_area(
@@ -231,60 +267,28 @@ notes_value = st.text_area(
 )
 
 completion_pct = (
-    int((int(pages_read) / safe_total_pages) * 100) if safe_total_pages > 0 else 0
+    min(int(pages_read / safe_total_pages * 100), 100) if safe_total_pages > 0 else 0
 )
-effective_pages = apply_status_to_pages(status_ui, int(pages_read), safe_total_pages)
-effective_pct = (
-    int((effective_pages / safe_total_pages) * 100) if safe_total_pages > 0 else 0
+render_metrics(
+    [
+        ("Completion", f"{completion_pct}%" if safe_total_pages > 0 else "N/A"),
+        (
+            "Pages",
+            f"{pages_read} / {safe_total_pages}" if safe_total_pages > 0 else pages_read,
+        ),
+        ("Status", STATUS_UI_LABELS[status_ui]),
+    ],
+    per_row=2 if compact_layout else 3,
 )
-if compact_layout:
-    summary_col_1, summary_col_2 = st.columns(2)
-    summary_col_1.metric("Completion", f"{effective_pct}%")
-    summary_col_2.metric(
-        "Pages",
-        (
-            f"{effective_pages} / {safe_total_pages}"
-            if safe_total_pages > 0
-            else str(effective_pages)
-        ),
-    )
-    st.metric(
-        "Status",
-        {
-            "want_to_read": "Want to Read",
-            "reading": "Reading",
-            "finished": "Finished",
-        }[status_ui],
-    )
-else:
-    summary_col_1, summary_col_2, summary_col_3 = st.columns(3)
-    summary_col_1.metric("Completion", f"{effective_pct}%")
-    summary_col_2.metric(
-        "Pages",
-        (
-            f"{effective_pages} / {safe_total_pages}"
-            if safe_total_pages > 0
-            else str(effective_pages)
-        ),
-    )
-    summary_col_3.metric(
-        "Status",
-        {
-            "want_to_read": "Want to Read",
-            "reading": "Reading",
-            "finished": "Finished",
-        }[status_ui],
-    )
 
 current_payload = {
     "status_ui": status_ui,
-    "current_page": int(pages_read),
-    "rating": int(rating_value),
+    "current_page": pages_read,
+    "rating": rating_value,
     "notes": notes_value,
 }
 
-snapshot = st.session_state.get("progress_snapshot")
-has_unsaved_changes = snapshot != current_payload
+has_unsaved_changes = st.session_state.get("progress_snapshot") != current_payload
 
 if has_unsaved_changes:
     st.info("You have unsaved progress changes.")
@@ -296,11 +300,12 @@ if compact_layout:
         type="primary",
         disabled=not has_unsaved_changes,
     )
-    discard_clicked = st.button(
+    st.button(
         "Discard Changes",
         width="stretch",
         type="secondary",
         disabled=not has_unsaved_changes,
+        on_click=discard_changes,
     )
 else:
     action_col_1, action_col_2 = st.columns(2)
@@ -312,71 +317,56 @@ else:
             disabled=not has_unsaved_changes,
         )
     with action_col_2:
-        discard_clicked = st.button(
+        st.button(
             "Discard Changes",
             width="stretch",
             type="secondary",
             disabled=not has_unsaved_changes,
+            on_click=discard_changes,
         )
-
-if discard_clicked:
-    st.session_state["progress_restore_pending"] = True
-    st.session_state["progress_notice"] = "Changes discarded."
-    st.rerun()
 
 if save_clicked:
     try:
         with st.spinner("Saving progress..."):
-            updated_progress = api_request(
+            api_request(
                 "PATCH",
                 f"/books/{selected_book_id}/progress",
                 json={
                     "status": UI_TO_API_STATUS[status_ui],
-                    "current_page": effective_pages,
-                    "rating": None if int(rating_value) == 0 else int(rating_value),
+                    "current_page": pages_read,
+                    "rating": None if rating_value == 0 else rating_value,
                     "notes": notes_value or None,
                 },
             )
-        st.session_state["progress_loaded_book_id"] = None
+        st.session_state["progress_loaded_sig"] = None
         st.session_state["progress_snapshot"] = None
-        st.session_state["progress_notice"] = "Progress updated."
+        st.session_state["progress_notice"] = "Progress saved."
         st.rerun()
     except RuntimeError as exc:
         st.error(str(exc))
 
-if not real_total_pages:
-    st.info(
-        (
-            "This book has no total page count yet, so the slider stays at "
-            "zero until you update the book details."
-        )
-    )
-
-stats_total = len(books)
-stats_reading = sum(1 for book in books if get_book_status(book) == "reading")
-stats_finished = sum(1 for book in books if get_book_status(book) == "completed")
-stats_want = sum(1 for book in books if get_book_status(book) == "not_started")
+st.markdown("#### Library Snapshot")
 ratings = [
     get_progress_value(book, "rating")
     for book in books
     if get_progress_value(book, "rating") is not None
 ]
-average_rating = round(sum(ratings) / len(ratings), 1) if ratings else 0.0
-
-if compact_layout:
-    metric_row_1 = st.columns(2)
-    metric_row_2 = st.columns(2)
-    metric_row_1[0].metric("Total Books", stats_total)
-    metric_row_1[1].metric("Currently Reading", stats_reading)
-    metric_row_2[0].metric("Finished", stats_finished)
-    metric_row_2[1].metric("Want to Read", stats_want)
-    st.metric("Average Rating", average_rating if ratings else "N/A")
-else:
-    top_metric_cols = st.columns(3)
-    bottom_metric_cols = st.columns(2)
-
-    top_metric_cols[0].metric("Total Books", stats_total)
-    top_metric_cols[1].metric("Currently Reading", stats_reading)
-    top_metric_cols[2].metric("Finished", stats_finished)
-    bottom_metric_cols[0].metric("Want to Read", stats_want)
-    bottom_metric_cols[1].metric("Average Rating", average_rating if ratings else "N/A")
+render_metrics(
+    [
+        ("Total Books", len(books)),
+        (
+            "Currently Reading",
+            sum(1 for book in books if get_book_status(book) == "reading"),
+        ),
+        (
+            "Finished",
+            sum(1 for book in books if get_book_status(book) == "completed"),
+        ),
+        (
+            "Want to Read",
+            sum(1 for book in books if get_book_status(book) == "not_started"),
+        ),
+        ("Average Rating", round(sum(ratings) / len(ratings), 1) if ratings else "N/A"),
+    ],
+    per_row=2 if compact_layout else 3,
+)

@@ -1,0 +1,13 @@
+[client]
+toolbarMode = "minimal"
+showSidebarNavigation = false
+
+# The app styles itself with a dark palette (see frontend/shared.py), so pin the
+# Streamlit theme to match. Otherwise visitors whose browser is in light mode
+# get white inputs and dropdowns on top of the dark background.
+[theme]
+base = "dark"
+primaryColor = "#278070"
+backgroundColor = "#121518"
+secondaryBackgroundColor = "#182025"
+textColor = "#e8e4d7"
